@@ -1,12 +1,17 @@
+import jdk.internal.util.xml.impl.Input;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
 import yahoofinance.histquotes.Interval;
 import org.apache.commons.csv.CSVPrinter;
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringWriter;
+import org.apache.commons.csv.CSVParser;
+import java.io.*;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.net.URL;
+import java.net.URLConnection;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -18,40 +23,41 @@ import java.util.Map;
 
 public class getData {
 
+
+
+
     public static void main(String args[]) throws IOException{
-
-        StringWriter stringWriter = new StringWriter();
-        CSVPrinter csvPrinter = new CSVPrinter(stringWriter, CSVFormat.EXCEL);
-
-
-        Calendar from = Calendar.getInstance();
-        Calendar to = Calendar.getInstance();
-        from.add(Calendar.YEAR,-5); // from 5 years ago
-
+        // TAKE USER INPUT AND SPLIT IT
         String[] symbols = args[0].split("\\|");
 
+        //INITIALIZE VARIABLES
+        Calendar from = Calendar.getInstance();
+        from.add(Calendar.YEAR,-5); // from 5 years ago
+
+        String fromstr = new SimpleDateFormat("MMM+dd,+yyyy").format(from.getTimeInMillis());
+        fromstr = fromstr.replace(",","%2C");
+
         System.out.println("Fetching Stocks:");
-        for (String sym : symbols)
-            System.out.println("\t" + sym);
+        for (String sym : symbols) {
+            System.out.println("\t" + sym); // debugging
+            //SET urlstr
+            String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
 
-        Map<String, Stock> stocks = YahooFinance.get(symbols,from,to, Interval.WEEKLY);
+            System.out.println(urlstr);
 
-        for (String stck : symbols) {
-            System.out.println(stocks.get(stck).getHistory());
-            String csv = "test " + stck + ".csv";
-            csvPrinter.printRecord(stocks.get(stck).getHistory());
+            InputStream is = new URL(urlstr).openStream();
+            Reader rdr = new InputStreamReader(is, "UTF-8");
+            BufferedReader in = new BufferedReader(rdr);
 
-            FileWriter writer = new FileWriter(csv);
-            writer.write(stringWriter.toString());
-            writer.flush();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null)
+                System.out.println(inputLine);
+            is.close();
+
+
         }
 
-
-/*
-        Stock stock = YahooFinance.get("GOOG");
-        System.out.println(stock.getHistory());
-
-*/
+        
 
     }
 }
