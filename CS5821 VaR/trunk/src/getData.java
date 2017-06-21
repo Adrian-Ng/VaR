@@ -18,17 +18,19 @@ public class getData {
     public static void main(String args[]) throws IOException{
         // TAKE USER INPUT AND SPLIT IT
         String[] symbols = args[0].split("\\|");
-
+        // NUMBER OF YEARS TO LOOK AT
+        int yearint = Integer.parseInt(args[1]);
         //INITIALIZE VARIABLES
         Calendar from = Calendar.getInstance();
-        from.add(Calendar.YEAR,-5); // from 5 years ago
+        from.add(Calendar.YEAR,-yearint); // from n years ago
 
         String fromstr = new SimpleDateFormat("MMM+dd,+yyyy").format(from.getTimeInMillis());
+        //CONVERT COMMA TO UNICODE
         fromstr = fromstr.replace(",","%2C");
 
-        System.out.println("Fetching Stocks:");
+        System.out.println("Fetching Historic Stock Data from " + yearint + " year(s) ago:");
         for (String sym : symbols) {
-            System.out.println("\t" + sym); // debugging
+            System.out.println("\n\t" + sym); // debugging
 
             //DEFINE SOME NAMING CONVENTION FOR OUTPUT CSV FILE
             String csv = sym + ".csv";
@@ -38,7 +40,7 @@ public class getData {
             //SET urlstr
             String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
 
-            System.out.println(urlstr);
+            System.out.println("\t\t" + urlstr);
 
             InputStream is = new URL(urlstr).openStream();
             //https://stackoverflow.com/questions/4120942/programatically-downloading-csv-files-with-java
@@ -56,10 +58,7 @@ public class getData {
             writer.flush();
             //https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
 
-            System.out.println("CSV file '" + csv + "' generated");
+            System.out.println("\t\tCSV file '" + csv + "' generated");
         }
-
-
-
     }
 }
