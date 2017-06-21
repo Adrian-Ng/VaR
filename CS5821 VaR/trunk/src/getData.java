@@ -1,31 +1,20 @@
-import jdk.internal.util.xml.impl.Input;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-import yahoofinance.Stock;
-import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.Interval;
 import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVParser;
 import java.io.*;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.net.URL;
-import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Map;
 
 
 /**
- * Created by Adrian on 17/06/2017.
+ * THIS PROCESS WILL ACCESS THE GOOGLE FINANCE API AND DOWNLOAD FINANCIAL DATA IN CSV FORMAT
+ * THE INPUT ARGUMENTS ARE:
+ *      1)  STOCK CODES, PIPE DELIMITED
+ *      2)  INTEGER REPRESENTING THE NUMBER OF YEARS OF HISTORICAL DATA TO ACCESS
  */
 
 
 public class getData {
-
-
-
-
     public static void main(String args[]) throws IOException{
         // TAKE USER INPUT AND SPLIT IT
         String[] symbols = args[0].split("\\|");
@@ -40,24 +29,37 @@ public class getData {
         System.out.println("Fetching Stocks:");
         for (String sym : symbols) {
             System.out.println("\t" + sym); // debugging
+
+            //DEFINE SOME NAMING CONVENTION FOR OUTPUT CSV FILE
+            String csv = sym + ".csv";
+            //CREATE NEW FILE
+            FileWriter writer = new FileWriter(csv);
+
             //SET urlstr
             String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
 
             System.out.println(urlstr);
 
             InputStream is = new URL(urlstr).openStream();
-            Reader rdr = new InputStreamReader(is, "UTF-8");
-            BufferedReader in = new BufferedReader(rdr);
-
+            //https://stackoverflow.com/questions/4120942/programatically-downloading-csv-files-with-java
+            BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             String inputLine;
-            while ((inputLine = in.readLine()) != null)
-                System.out.println(inputLine);
+            while ((inputLine = in.readLine()) != null) {
+                String[] strings = inputLine.split(",");
+                StringWriter stringWriter = new StringWriter();
+                CSVPrinter csvPrinter = new CSVPrinter(stringWriter, CSVFormat.EXCEL);
+                csvPrinter.printRecord(strings);
+                writer.write(stringWriter.toString());
+                //System.out.println(stringWriter);
+            }
             is.close();
+            writer.flush();
+            //https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
 
-
+            System.out.println("CSV file '" + csv + "' generated");
         }
 
-        
+
 
     }
 }
