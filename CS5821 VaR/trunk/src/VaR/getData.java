@@ -4,9 +4,10 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import java.io.*;
 import java.net.URL;
-import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,24 +25,17 @@ public class getData {
 
     public static Map<String, ArrayList<myData>> mapStocks = new HashMap<String, ArrayList<myData>>();
 
-    public static void parseCSV(String sym, String fromstr) throws IOException{
-        //SET urlstr
-        String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
-        System.out.println("\t\t" + urlstr);
+    public static BufferedReader parseCSV(String sym, String urlstr) throws IOException{
         InputStream is = new URL(urlstr).openStream();
         //https://stackoverflow.com/questions/4120942/programatically-downloading-csv-files-with-java
         BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-        // writeCSV(sym, in); FOR DEBUGGING
-        ArrayList<myData> alData = setData(in);
-        mapStocks.put(sym, alData);
-        is.close();
+        return in;
         //https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
     }
 
     public static ArrayList<myData> setData(BufferedReader in) throws IOException{
         String inputLine;
         ArrayList<myData> alData = new ArrayList<myData>();
-       // int i=0;
         in.readLine();
         while ((inputLine = in.readLine()) != null) {
             String[] strTuple = inputLine.split(",");
@@ -52,22 +46,13 @@ public class getData {
             thisTuple.setStock(1,Double.parseDouble(strTuple[2]));      //High
             thisTuple.setStock(2,Double.parseDouble(strTuple[3]));      //Low
             thisTuple.setStock(3,Double.parseDouble(strTuple[4]));      //Close
-
-           /* VOLUME
-            if (strTuple[5]=="-")
-                thisTuple.setVol(0);
-            else
-                thisTuple.setVol(Integer.parseInt(strTuple[5]));            //Volume
-            */
-            //PRINT (DEBUGGING)
-
+            thisTuple.setVol(Integer.parseInt(strTuple[5]));               //Volume
             //SET ARRAYLIST
             alData.add(thisTuple);
         }
-        //System.out.println("test");
         return alData;
     }
-
+/*
     public static void writeCSV(String sym, BufferedReader in) throws IOException{
         //DEFINE SOME NAMING CONVENTION FOR OUTPUT CSV FILE
         String csv = sym + ".csv";
@@ -83,27 +68,58 @@ public class getData {
             //http://www.programcreek.com/java-api-examples/index.php?api=org.apache.commons.csv.CSVPrinter
         }
         writer.flush();
-        System.out.println("\t\tCSV file '" + csv + "' generated");
+        //System.out.println("\t\tCSV file '" + csv + "' generated");
+    }
+*/
+    public static String subtDays(int intDays){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM+dd,+yyyy");
+        int i = 0;
+        int j = 0;
+        while(i < intDays){
+            if(LocalDateTime.now().minusDays(j).getDayOfWeek() == DayOfWeek.SATURDAY)
+                i--;
+             else if (LocalDateTime.now().minusDays(j).getDayOfWeek()== DayOfWeek.SUNDAY)
+                i--;
+            i++;
+            j++;
+        }
+        LocalDateTime daysAgo = LocalDateTime.now().minusDays(j);
+        //https://stackoverflow.com/questions/22463062/how-to-parse-format-dates-with-localdatetime-java-8
+        String fromstr = daysAgo.format(formatter);
+        //CONVERT COMMA TO UNICODE
+        fromstr = fromstr.replace(",","%2C");
+        return fromstr;
     }
 
 
     public static void main(String args[]) throws IOException{
         // TAKE USER INPUT AND SPLIT IT
         String[] symbols = args[0].split("\\|");
-
-        // NUMBER OF YEARS TO LOOK AT
-        int yearint = Integer.parseInt(args[1]);
-         //INITIALIZE VARIABLES
-        Calendar from = Calendar.getInstance();
-        from.add(Calendar.YEAR,-yearint); // from n years ago
-        String fromstr = new SimpleDateFormat("MMM+dd,+yyyy").format(from.getTimeInMillis());
-        //CONVERT COMMA TO UNICODE
-        fromstr = fromstr.replace(",","%2C");
-        System.out.println("Fetching VaR.Historic Stock Data from " + yearint + " year(s) ago:");
+        // NUMBER OF DAYS IN THE PAST TO LOOK AT
+        int intDays = Integer.parseInt(args[1]);
+        System.out.println("Fetching VaR.Historic Stock Data from " + intDays + " working day(s) ago:");
         for (String sym : symbols) {
             System.out.println("\n\t" + sym); // debugging
-            parseCSV(sym, fromstr);
+            int size;
+            int decrementDays = intDays;
+            //DO THIS UNTIL WE GET THIS RIGHT NUMBER OF ROWS OF DATA!
+            do {
+                String fromstr = subtDays(decrementDays);
+                //SET urlstr
+                String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
+                BufferedReader in = parseCSV(sym, urlstr);
+                //writeCSV(sym, in); //FOR DEBUGGING
+                ArrayList<myData> alData = setData(in);
+                in.close();
+                size = alData.size() +1;
+                if (size == intDays) {
+                    System.out.println("Retrieved " + size + " rows of data");
+                    System.out.println("\t\t" + urlstr);
+                    mapStocks.put(sym, alData);
+                }
+                decrementDays++;
+            }while(size <= intDays);
         }
-        Historic.getData(symbols);
+        Historic.main(symbols);
     }
 }
