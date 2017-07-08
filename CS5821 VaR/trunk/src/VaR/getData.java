@@ -18,12 +18,12 @@ import java.util.Map;
  *      2)  INTEGER REPRESENTING THE NUMBER OF YEARS OF HISTORICAL DATA TO ACCESS
  *
  * THE ATTRIBUTES OF THE DATA ARE
- *      "﻿Date",Open,High,Low,Close,Volume
+ *      ﻿Date,Open,High,Low,Close,Volume
  */
 
 public class getData {
 
-    public static Map<String, ArrayList<myData>> mapStocks = new HashMap<String, ArrayList<myData>>();
+
 
     public static BufferedReader parseCSV(String sym, String urlstr) throws IOException{
         InputStream is = new URL(urlstr).openStream();
@@ -33,26 +33,29 @@ public class getData {
         //https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
     }
 
-    public static ArrayList<myData> setData(BufferedReader in) throws IOException{
+    public static ArrayList<Double> setData(BufferedReader in) throws IOException{
         String inputLine;
-        ArrayList<myData> alData = new ArrayList<myData>();
+        ArrayList<Double> alData = new ArrayList<Double>();
         in.readLine();
         while ((inputLine = in.readLine()) != null) {
             String[] strTuple = inputLine.split(",");
-            myData thisTuple = new myData();
+            //myData thisTuple = new myData();
             //SET myData
-            thisTuple.setDate(strTuple[0]);                                //Date
-            thisTuple.setStock(0,Double.parseDouble(strTuple[1]));      //Open
-            thisTuple.setStock(1,Double.parseDouble(strTuple[2]));      //High
-            thisTuple.setStock(2,Double.parseDouble(strTuple[3]));      //Low
-            thisTuple.setStock(3,Double.parseDouble(strTuple[4]));      //Close
-            thisTuple.setVol(Integer.parseInt(strTuple[5]));               //Volume
+            //thisTuple.setDate(strTuple[0]);                                //Date
+            //thisTuple.setStock(0,Double.parseDouble(strTuple[1]));      //Open
+            //thisTuple.setStock(1,Double.parseDouble(strTuple[2]));      //High
+            //thisTuple.setStock(2,Double.parseDouble(strTuple[3]));      //Low
+            //thisTuple.setStock(3,Double.parseDouble(strTuple[4]));      //Close
+            //thisTuple.setVol(Integer.parseInt(strTuple[5]));               //Volume
             //SET ARRAYLIST
-            alData.add(thisTuple);
+            alData.add(Double.parseDouble(strTuple[4]));
         }
         return alData;
     }
 /*
+
+    THIS THING WILL SAVE THE DATA TO A CSV FILE
+    ONLY USED FOR DEBUGGING
     public static void writeCSV(String sym, BufferedReader in) throws IOException{
         //DEFINE SOME NAMING CONVENTION FOR OUTPUT CSV FILE
         String csv = sym + ".csv";
@@ -71,7 +74,7 @@ public class getData {
         //System.out.println("\t\tCSV file '" + csv + "' generated");
     }
 */
-    public static String subtDays(int intDays){
+    public static String CalculateDateFromIntDays(int intDays){
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM+dd,+yyyy");
         int i = 0;
         int j = 0;
@@ -93,6 +96,7 @@ public class getData {
 
 
     public static void main(String args[]) throws IOException{
+        HashMap<String, ArrayList<Double>> mapStocks = new HashMap<String, ArrayList<Double>>();
         // TAKE USER INPUT AND SPLIT IT
         String[] symbols = args[0].split("\\|");
         // NUMBER OF DAYS IN THE PAST TO LOOK AT
@@ -104,14 +108,14 @@ public class getData {
             int decrementDays = intDays;
             //DO THIS UNTIL WE GET THIS RIGHT NUMBER OF ROWS OF DATA!
             do {
-                String fromstr = subtDays(decrementDays);
+                String fromstr = CalculateDateFromIntDays(decrementDays);
                 //SET urlstr
                 String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
                 BufferedReader in = parseCSV(sym, urlstr);
                 //writeCSV(sym, in); //FOR DEBUGGING
-                ArrayList<myData> alData = setData(in);
+                ArrayList<Double> alData = setData(in);
                 in.close();
-                size = alData.size() +1;
+                size = alData.size() + 1; //ADD ONE TO ACCOMMODATE HEADER
                 if (size == intDays) {
                     System.out.println("Retrieved " + size + " rows of data");
                     System.out.println("\t\t" + urlstr);
@@ -120,6 +124,7 @@ public class getData {
                 decrementDays++;
             }while(size <= intDays);
         }
-        Historic.main(symbols);
+        Analytical.main(mapStocks);
+        //MonteCarlo.main(mapStocks);
     }
 }
