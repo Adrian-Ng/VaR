@@ -6,9 +6,9 @@ import java.util.HashMap;
 
 /**
  * Created by Adrian on 21/06/2017.
+ * http://financetrain.com/calculating-var-using-historical-simulation/
  */
 public class Historic {
-
 
     public static double[][] calculatePriceChanges(double[][] stockPrices){
         int numSym = stockPrices.length;
@@ -37,24 +37,24 @@ public class Historic {
 
         for (int i = 0; i < symbol.length; i++) {
             currentPrice[i] = stockPrices[i][0];
-            System.out.println("\t\t" + portfolioPi[i] + " stocks in " + symbol[i]);
+            System.out.println("\t\t" + portfolioPi[i] + " stocks in " + symbol[i] + ". Current price is: " + currentPrice[i]);
         }
 
+        double currentValue = 0;
+        for (int i = 0; i < symbol.length; i++) {
+            currentValue += portfolioPi[i] * currentPrice[i];
+        }
 
+        System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
 
         for(int i = 0; i < priceChanges[0].length;i++) {
             double sum = 0;
             for (int j = 0; j < symbol.length; j++)
                 sum += priceChanges[j][i] * portfolioPi[j];
             deltaP[i] = sum;
-
         }
         Arrays.sort(deltaP);
-        System.out.println("\t\t" + deltaP[(int) (1-confidenceX)*deltaP.length]);
-
-
-
+        double index = (1-confidenceX)*deltaP.length;
+        System.out.println("\t\tValue at Risk: " + deltaP[(int) index]);
     }
-
-
 }

@@ -97,10 +97,24 @@ public class StockParam {
                 covarianceMatrix[i][j] = new StockParam(multiStock[i], multiStock[j]).getCovariance();
         return covarianceMatrix;
     }
-   /*
-    public double[][][] getCholeskyDecomposition(){
 
+    public double[][] getCholeskyDecomposition(){
+        double[][] covarianceMatrix = new StockParam(multiStock).getCovarianceMatrix();
+        double[][] cholesky = new double[covarianceMatrix.length][covarianceMatrix.length];
+        //Start at the top right
+        cholesky[0][0] = Math.sqrt(covarianceMatrix[0][0]);
+        for(int i = 1; i < covarianceMatrix.length; i++)
+            for(int j = 0; j < covarianceMatrix.length; j++)
+                if(i == j && j > 0 ) {
+                    double sum = 0;
+                    for(int k = 0; k < j;k++)
+                        sum += Math.pow(cholesky[i][k],2);
+                    cholesky[i][j] = Math.sqrt(covarianceMatrix[i][j] - sum);
+                }
+                else if (i != j)
+                cholesky[i][j] = covarianceMatrix[i][j]/cholesky[j][j];
+        return cholesky;
     }
-    */
+
 }
 

@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class MonteCarlo {
-    private static double grid[];
 
     public static double[][] calculatePriceChanges(double[][] stockPrices){
         int numSym = stockPrices.length;
@@ -21,25 +20,31 @@ public class MonteCarlo {
                 priceDiff[i][j] = stockPrices[i][j] - stockPrices[i][j+1];
         return priceDiff;
     }
-
-    public static double stepsRandomWalk(double dt) {
-        // sample from random Gaussian of mean 0 and sd 1
-        Random epsilon = new Random();
-        double dz = epsilon.nextGaussian()*Math.sqrt(dt);
+    public static double[] stepsRandomWalk(double dt, double[][] choleskyDecomposition) {
+        int numSym = choleskyDecomposition.length;
+        // Generate a vector of random variables, sampling from random Gaussian of mean 0 and sd 1
+        double[] dz = new double[numSym];
+        for(int i = 0; i < numSym; i++) {
+            Random epsilon = new Random();
+            dz[i] = epsilon.nextGaussian() * Math.sqrt(dt);
+        }
+        //multiply the Cholesky Decomposition by the vector of random variables.
+        double[] correlatedRandomVariables = new double[numSym];
+        for(int i = 0; i < numSym; i++) {
+            double sum = 0;
+            for (int j = 0; j < numSym; j++)
+                sum += choleskyDecomposition[i][j] * dz[j];
+            correlatedRandomVariables[i] = sum;
+        }
         return dz;
     }
-    public static double simuluatePath(int N, double S0, double dt, double mu, double sigma) {
-        // allocate memory to grid
-        grid = new double[N];
-        grid[0] = S0;
-        for (int i = 1; i < N; i++){
-            double dz = stepsRandomWalk(dt);
-            //grid[i] = grid[i-1] + (mu*grid[i-1]*dt) + (sigma*grid[i-1]*dz);
-            grid[i] = (((mu*dt)+(sigma*dz))*grid[i-1]) + grid[i-1];
-            //System.out.println(dz);
-        }
-        //return the final stock price
-        return grid[N-1];
+    public static double[] simuluatePath(int N, double currentStockPrices[], double dt, double[] mu, double[] sigma, double[][] choleskyDecomposition) {
+        int numSym = mu.length;
+        double[] terminalPrices = new double[numSym];
+        double[] dz = stepsRandomWalk(dt, choleskyDecomposition);
+          for(int i = 0; i < numSym; i++)
+              terminalPrices[i] = currentStockPrices[i] * Math.exp((mu[i]-(Math.pow(sigma[i],2)*0.5))*dt+sigma[i]*Math.sqrt(dt)*dz[i]);
+        return terminalPrices;
     }
     public static void main(String[] symbol, double[][] stockPrices) {
 
@@ -57,51 +62,82 @@ public class MonteCarlo {
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
 
+        double currentPrice[] = new double[symbol.length];
         int numSym = stockPrices.length;
-        int numTuples = stockPrices[0].length;
 
-        double[][] covarianceMatrix = new StockParam(stockPrices).getCovarianceMatrix();
+
+        /**
+         * WHAT DOES THE PORTFOLIO LOOK LIKE?
+         */
+        for (int i = 0; i < symbol.length; i++) {
+            currentPrice[i] = stockPrices[i][0];
+            System.out.println("\t\t" + portfolioPi[i] + " stocks in " + symbol[i] + ". Current price is: " + currentPrice[i]);
+        }
+        double currentValue = 0;
+        for (int i = 0; i < symbol.length; i++) {
+            currentValue += portfolioPi[i] * currentPrice[i];
+        }
+        System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
+
+        double[][] priceChanges = calculatePriceChanges(stockPrices);
+
+        /**
+         * CALCULATE THE COVARIANCE MATRIX FROM THE STOCK MARKET VARIABLES
+         */
+        double[][] covarianceMatrix = new StockParam(priceChanges).getCovarianceMatrix();
+        System.out.println("\n\t\tCovariance Matrix:");
         for(int i = 0; i < numSym; i++)
-            for(int j = 0; j < numSym; j++)
-                System.out.println(covarianceMatrix[i][j]);
+            System.out.println("\t\t" + Arrays.toString(covarianceMatrix[i]));
+        /**
+         * CALCULATE THE CHOLESKY DECOMPOSITION FROM THE STOCK MARKET VARIABLES
+         */
+        double[][] choleskyDecomposition = new StockParam(priceChanges).getCholeskyDecomposition();
+        System.out.println("\n\t\tCholesky Decomposition:");
+        for(int i = 0; i < numSym; i++)
+            System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i]));
 
-        /*for (int i = 0; i < symbol.length; i++) {
-            System.out.println("\t" + symbol[i]);
+        /**
+         * RETURN A VECTOR OF MEAN STOCK PRICES
+         */
+        double[] meanStock = new double[numSym];
+        for(int i = 0; i < numSym; i++)
+            meanStock[i] = new StockParam(priceChanges[i]).getMean();
 
-           // double[][] priceDiff = calculatePriceChanges(stockPrices);
-            StockParam thisStock = new StockParam(stockPrices[i]);
+        /**
+         * RETURN A VECTOR OF VOLATILITY
+         */
+        double[] volatilities = new double[numSym];
+        for(int i = 0; i < numSym; i++)
+            volatilities[i] = new StockParam(priceChanges[i]).getEWMAVolatility();
 
-            System.out.println("\t\tCurrent Stock Price: " + stockPrices[i][0]);
-            System.out.println("\t\tWe have " + portfolioPi[i] + " shares");
-            //Get Current Value
-            double currentValue = stockPrices[i][0] * portfolioPi[i];
-            System.out.println("\t\tCurrent Single Stock Portfolio Value: " + String.format("%.2f",currentValue));
-            //Get Mean Price
-            double meanStockPrice = thisStock.getMean();
-            //System.out.println(meanStockPrice);
+        /**
+         * RETURN A VECTOR OF CURRENT STOCK PRICES
+         */
+        double[] currentStockPrices = new double[numSym];
+        for(int i = 0; i < numSym; i++)
+            currentStockPrices[i] = stockPrices[i][0];
 
-            //Get Variance
-            double stDevStockPrice = thisStock.getStandardDeviation();
-            //System.out.println(stDevStockPrice);
-            //Get Volatilities
-            double dailyEqualWeight = thisStock.getEqualWeightVolatility();
-            double yearlyEqualWeight = thisStock.getEqualWeightVolatility() * Math.sqrt(252);
-            double dailyEWMA = thisStock.getEWMAVolatility();
-            double yearlyEWMA = thisStock.getEWMAVolatility() * Math.sqrt(252);
+        /**
+         * SIMULATE A NUMBER OF TERMINAL STOCK PRICES
+         */
+        double[][] terminalPrices = new double[paths][numSym];
+        // simulate a number of stock price trajectories
+        for (int i = 0; i < paths; i++) {
+            terminalPrices[i] = simuluatePath(N, currentStockPrices, dt, meanStock, volatilities, choleskyDecomposition);
+            //System.out.println(Arrays.toString(terminalPrices[i]));
+        }
+        double[] deltaP = new double[terminalPrices[0].length];
+        for(int i = 0; i < terminalPrices[0].length;i++) {
+            double sum = 0;
+            for (int j = 0; j < numSym; j++)
+                sum += terminalPrices[j][i] * portfolioPi[j];
+            deltaP[i] = sum;
+        }
+        Arrays.sort(deltaP);
+        double index = (1-confidenceX)*deltaP.length;
+        System.out.println("\t\tValue at Risk: " + deltaP[(int) index]);
 
-            double[] TerminalStocks = new double[paths];
-            // simulate a number of stock price trajectories
-            for (int j = 0; j < paths; j++) {
-                TerminalStocks[j] = simuluatePath(N, stockPrices[i][0], dt, meanStockPrice, stDevStockPrice);
-                //System.out.println(TerminalStocks[i]);
-            }
-            //sort
-            Arrays.sort(TerminalStocks);
-            double VaR = TerminalStocks[(int) (confidenceX*paths)-1];
-            System.out.println("\t\tVaR: " + String.format("%.2f",VaR));
-            System.out.println("\t\tVaR: " + VaR);
 
-        }*/
     }
 
 }

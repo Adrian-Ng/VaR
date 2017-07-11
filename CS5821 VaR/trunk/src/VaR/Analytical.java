@@ -7,7 +7,7 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 public class Analytical {
 
     public static void main(String[] symbol, double[][] stockPrices){
-        long    portfolioPi[]     = {10000000,5000000};
+        long    portfolioPi[]     = {100,200};
         double  confidenceX     = 0.99;
         int     timeHorizonN    = 1;
         NormalDistribution distribution = new NormalDistribution(0,1);
@@ -45,7 +45,7 @@ public class Analytical {
         double covXY = new StockParam(stockPrices[0],stockPrices[1]).getCovariance();
         double rhoXY = covXY/(stdX*stdY);
         double stdXY = Math.sqrt(Math.pow(stdX,2) + Math.pow(stdY,2) + 2*rhoXY*stdX*stdY);
-        System.out.println("\nValue at Risk for the whole portfolio over " + timeHorizonN + " day: " + stdXY * riskPercentile);
+        System.out.println("\n\t\tValue at Risk for the whole portfolio over " + timeHorizonN + " day: " + stdXY * riskPercentile);
     }
 
 }
