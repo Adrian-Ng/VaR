@@ -8,9 +8,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * THIS PROCESS WILL ACCESS THE GOOGLE FINANCE API AND WRITE FINANCIAL DATA TO CSV
  * THE INPUT ARGUMENTS ARE:
@@ -23,8 +20,6 @@ import java.util.Map;
 
 public class getData {
 
-
-
     public static BufferedReader parseCSV(String sym, String urlstr) throws IOException{
         InputStream is = new URL(urlstr).openStream();
         //https://stackoverflow.com/questions/4120942/programatically-downloading-csv-files-with-java
@@ -36,7 +31,7 @@ public class getData {
     public static ArrayList<Double> setData(BufferedReader in) throws IOException{
         String inputLine;
         ArrayList<Double> alData = new ArrayList<Double>();
-        in.readLine();
+        in.readLine();//SKIP HEADER
         while ((inputLine = in.readLine()) != null) {
             String[] strTuple = inputLine.split(",");
             //myData thisTuple = new myData();
@@ -96,35 +91,45 @@ public class getData {
 
 
     public static void main(String args[]) throws IOException{
-        HashMap<String, ArrayList<Double>> mapStocks = new HashMap<String, ArrayList<Double>>();
         // TAKE USER INPUT AND SPLIT IT
         String[] symbols = args[0].split("\\|");
         // NUMBER OF DAYS IN THE PAST TO LOOK AT
         int intDays = Integer.parseInt(args[1]);
-        System.out.println("Fetching VaR.Historic Stock Data from " + intDays + " working day(s) ago:");
-        for (String sym : symbols) {
-            System.out.println("\n\t" + sym); // debugging
+        int numSym = symbols.length;
+        double[][] stockPrices = new double[numSym][intDays];
+        System.out.println("=========================================================================");
+        System.out.println("getData.java");
+        System.out.println("=========================================================================");
+
+        System.out.println("\tFetching VaR.Historic Stock Data from " + intDays + " working day(s) ago:");
+        //GET FINANCIAL DATA FOR EACH SYMBOL
+        for (int i = 0; i < numSym; i++) {
+            System.out.println("\t" + symbols[i]); // debugging
             int size;
             int decrementDays = intDays;
             //DO THIS UNTIL WE GET THIS RIGHT NUMBER OF ROWS OF DATA!
             do {
-                String fromstr = CalculateDateFromIntDays(decrementDays);
-                //SET urlstr
-                String urlstr = "http://www.google.com/finance/historical?q=" + sym + "&startdate=" + fromstr + "&output=csv";
-                BufferedReader in = parseCSV(sym, urlstr);
+                String fromStrAPI = CalculateDateFromIntDays(decrementDays);
+                //SET urlStrAPI
+                String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
+                BufferedReader in = parseCSV(symbols[i], urlStrAPI);
                 //writeCSV(sym, in); //FOR DEBUGGING
                 ArrayList<Double> alData = setData(in);
                 in.close();
-                size = alData.size() + 1; //ADD ONE TO ACCOMMODATE HEADER
+                size = alData.size();
                 if (size == intDays) {
-                    System.out.println("Retrieved " + size + " rows of data");
-                    System.out.println("\t\t" + urlstr);
-                    mapStocks.put(sym, alData);
+                    System.out.println("\t\tRetrieved " + size + " rows of data");
+                    System.out.println("\t\t" + urlStrAPI);
+                    //CONVERT ARRAY LIST DOUBLE TO ARRAY DOUBLE
+                    for(int j = 0; j < intDays; j++)
+                        stockPrices[i][j] = alData.get(j);
                 }
                 decrementDays++;
             }while(size <= intDays);
         }
-        Analytical.main(mapStocks);
-        //MonteCarlo.main(mapStocks);
+        Analytical.main(symbols, stockPrices);
+        MonteCarlo.main(symbols, stockPrices);
+        Historic.main(symbols, stockPrices);
+        //BackTest.main(symbols, stockPrices);
     }
 }
