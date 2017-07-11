@@ -1,26 +1,38 @@
 package VaR;
-
-import java.util.ArrayList;
-
 /**
  * Created by Adrian on 08/07/2017.
  */
 public class StockParam {
     //instance variable
-    private ArrayList<Double> singleStock;
+    private double[] singleStock;
     private int numTuple;
+
+    private double[] xStock;
+    private double[] yStock;
+
+    private double[][] multiStock;
     //constructor
-    public StockParam(ArrayList<Double> singleStock)
+    public StockParam(double[] singleStock)
     {
         this.singleStock = singleStock;
-        numTuple =  singleStock.size();
+        numTuple =  singleStock.length;
     }
 
-    public double getEqualWeightVolatility () {
+    public StockParam(double[] xStock, double[] yStock){
+        this.xStock = xStock;
+        this.yStock = yStock;
+    }
+
+    public StockParam(double[][] multiStock)
+    {
+        this.multiStock = multiStock;
+    }
+
+    public double getEqualWeightVolatility() {
         double arrU[] = new double [numTuple-1];
         //GENERATE ARRAY OF PRICE DIFFERENCES
         for (int i = 0; i < (numTuple-1); i++)
-            arrU[i] = Math.pow((singleStock.get(i+1)-singleStock.get(i))/singleStock.get(i),2);
+            arrU[i] = Math.pow((singleStock[i+1]-singleStock[i])/singleStock[i],2);
         //CALCULATE AVERAGE
         double sum = 0;
         for (int i = 0; i < (numTuple-1); i++)
@@ -35,7 +47,7 @@ public class StockParam {
         double arrU[] = new double [numTuple-1];
         //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u^2
         for (int i = 0; i < (numTuple-1); i++)
-            arrU[i] = Math.pow((singleStock.get(i+1)-singleStock.get(i))/singleStock.get(i),2);
+            arrU[i] = Math.pow((singleStock[i+1]-singleStock[i])/singleStock[i],2);
         double EWMA = arrU[0];
         for (int i = 1; i < (numTuple-2);i++)
             EWMA = lambda * EWMA + (1-lambda) * arrU[i+1];
@@ -46,7 +58,7 @@ public class StockParam {
     public double getMean(){
         double sum = 0;
         for (int i = 0; i< numTuple; i++)
-            sum += singleStock.get(i);
+            sum += singleStock[i];
         return sum/numTuple;
     }
 
@@ -54,11 +66,41 @@ public class StockParam {
         double mean = getMean();
         double sum = 0;
         for (int i = 0; i< numTuple; i++)
-            sum += Math.pow((singleStock.get(i) - mean),2);
-        return sum/numTuple;
+            sum += Math.pow((singleStock[i] - mean),2);
+        return sum/(numTuple-1);
     }
 
+    public double getStandardDeviation(){
+        return Math.sqrt(getVariance());
+    }
 
+    public double getCovariance(){
+        int numTuples = xStock.length;
+        //Get Mean
+        double meanX = new StockParam(xStock).getMean();
+        double meanY = new StockParam(yStock).getMean();
+        //Calculation
+        double sum = 0;
+        for (int i = 0; i < numTuples; i++)
+            sum +=(xStock[i] - meanX)*(yStock[i] - meanY);
+        return sum/(numTuples-1);
+    }
 
+    public double[][] getCovarianceMatrix(){
+        int numSym = multiStock.length;
+        double[] meanVector = new double[numSym];
+        for(int i = 0; i < numSym; i++)
+            meanVector[i] = new StockParam(multiStock[i]).getMean();
+        double[][] covarianceMatrix = new double[numSym][numSym];
+        for(int i = 0; i < numSym; i++)
+            for(int j = 0;j < numSym; j++)
+                covarianceMatrix[i][j] = new StockParam(multiStock[i], multiStock[j]).getCovariance();
+        return covarianceMatrix;
+    }
+   /*
+    public double[][][] getCholeskyDecomposition(){
+
+    }
+    */
 }
 
