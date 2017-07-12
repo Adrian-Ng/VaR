@@ -1,8 +1,6 @@
 package VaR;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 /**
  * Created by Adrian on 21/06/2017.
@@ -10,15 +8,7 @@ import java.util.HashMap;
  */
 public class Historic {
 
-    public static double[][] calculatePriceChanges(double[][] stockPrices){
-        int numSym = stockPrices.length;
-        int numTuples = stockPrices[0].length;
-        double[][] priceDiff = new double[numSym][numTuples - 1];
-        for  (int i = 0;i < numSym;i++)
-            for (int j = 0; j < numTuples - 1; j++)
-                priceDiff[i][j] = stockPrices[i][j] - stockPrices[i][j+1];
-        return priceDiff;
-    }
+
 
     public static void main(String[] symbol, double[][] stockPrices){
 
@@ -33,7 +23,7 @@ public class Historic {
         System.out.println("Historic.java");
         System.out.println("=========================================================================");
 
-        double[][] priceChanges = calculatePriceChanges(stockPrices);
+        double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
 
         for (int i = 0; i < symbol.length; i++) {
             currentPrice[i] = stockPrices[i][0];
