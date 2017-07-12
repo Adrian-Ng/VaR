@@ -11,7 +11,6 @@ import java.util.Random;
 
 public class MonteCarlo {
 
-
     public static double[] stepsRandomWalk(double[][] choleskyDecomposition) {
         int numSym = choleskyDecomposition.length;
         // Generate a vector of random variables, sampling from random Gaussian of mean 0 and sd 1
@@ -33,7 +32,7 @@ public class MonteCarlo {
     public static double[] simuluatePath(int N, double[] currentStockPrices, double dt, double[][] choleskyDecomposition) {
         int numSym = choleskyDecomposition.length;
         double[][] grid = new double[numSym][N];
-        double[] terminalStockPrice = new double[numSym];
+        double[] terminalPercentChange = new double[numSym];
 
         for(int i = 0; i < numSym; i++)
             grid[i][0] = currentStockPrices[i];
@@ -42,10 +41,10 @@ public class MonteCarlo {
             for (int j = 0; j < numSym; j ++)
                 grid[j][i] = (correlatedRandomVariables[j] * grid[j][i-1] * Math.sqrt(dt)) +  grid[j][i-1];
         }
-
+        //RETURN LAST RESULT ON THE GRID. THIS IS THE TERMINAL PERCENTAGE CHANGE
         for(int i = 0; i < numSym; i++)
-            terminalStockPrice[i] = grid[i][N-1]/currentStockPrices[i];
-        return terminalStockPrice;
+            terminalPercentChange[i] = grid[i][N-1]/currentStockPrices[i];
+        return terminalPercentChange;
     }
 
     public static void main(String[] symbol, double[][] stockPrices) {
@@ -96,29 +95,29 @@ public class MonteCarlo {
             System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i]));
 
         /**
-         * SIMULATE A NUMBER OF CORRELATED RANDOM VARIABLES
+         * SIMULATE A NUMBER OF STOCK PERCENTAGE CHANGES
          */
-        double[][] terminalPrices = new double[numSym][paths];
+        double[][] allPercentageChanges = new double[numSym][paths];
         for (int i = 0; i < paths; i++) {
-            double[] correlatedRandomVariables = simuluatePath(N, currentStockPrices, dt, choleskyDecomposition);
+            double[] tuplePercentageChanges = simuluatePath(N, currentStockPrices, dt, choleskyDecomposition);
             //System.out.println(Arrays.toString(correlatedRandomVariables));
             for(int j =0; j < numSym; j++)
-                terminalPrices[j][i] = correlatedRandomVariables[j];
+                allPercentageChanges[j][i] = tuplePercentageChanges[j];
         }
 
-        double[] deltaP = new double[terminalPrices[0].length];
-        for(int i = 0; i < terminalPrices[0].length;i++) {
+        /**
+         * CALCULATE CHANGE IN PORTFOLIO VALUE FROM SIMULATED PERCENTAGE CHANGES
+         */
+        double[] deltaP = new double[allPercentageChanges[0].length];
+        for(int i = 0; i < allPercentageChanges[0].length;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += terminalPrices[j][i] * portfolioPi[j] ;
+                sum += allPercentageChanges[j][i] * portfolioPi[j] ;
             deltaP[i] = sum;
         }
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
         System.out.println("\t\tValue at Risk: " + deltaP[(int) index]);
-
-
     }
-
 }
 

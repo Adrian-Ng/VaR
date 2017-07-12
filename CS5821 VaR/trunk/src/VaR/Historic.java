@@ -8,8 +8,6 @@ import java.util.Arrays;
  */
 public class Historic {
 
-
-
     public static void main(String[] symbol, double[][] stockPrices){
 
         long  portfolioPi[]     = {100,200};
