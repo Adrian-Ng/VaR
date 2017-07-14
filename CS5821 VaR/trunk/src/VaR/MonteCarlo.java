@@ -47,36 +47,36 @@ public class MonteCarlo {
         return terminalPercentChange;
     }
 
-    public static void main(String[] symbol, double[][] stockPrices) {
-        long  portfolioPi[]     = {100,200};
-        double  confidenceX     = 0.99;
-        int     timeHorizonN    = 1;
-        //initialize ints
-        int N = 24;                                   // 1 day expressed in hours. this is the number of steps.
-        int paths = 100000;                                  // number of random walks we will compute
-        // initialize doubles
-        double T = timeHorizonN;                            // 1 day
-        double dt = T/N;                                    // size of the step where each step is 1 hour
-
+    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
 
-        int numSym = stockPrices.length;
+        //initialize ints
+        int N = 24;                                         // 1 day expressed in hours. this is the number of steps.
+        int paths = 100000;                                 // number of random walks we will compute
+        // initialize doubles
+        double T = timeHorizonN;                            // 1 day
+        double dt = T/N;                                    // size of the step where each step is 1 hour
+
+        int numSym = symbol.length;
         double[] currentStockPrices = new double[numSym];
         /**
          * WHAT DOES THE PORTFOLIO LOOK LIKE?
          */
         for (int i = 0; i < symbol.length; i++) {
             currentStockPrices[i] = stockPrices[i][0];
-            System.out.println("\t\t" + portfolioPi[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
+            System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
         }
         double currentValue = 0;
         for (int i = 0; i < symbol.length; i++) {
-            currentValue += portfolioPi[i] * currentStockPrices[i];
+            currentValue += stockDelta[i] * currentStockPrices[i];
         }
         System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
 
+        /**
+         * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
+         */
         double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
 
         /**
@@ -112,12 +112,15 @@ public class MonteCarlo {
         for(int i = 0; i < allPercentageChanges[0].length;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += allPercentageChanges[j][i] * portfolioPi[j] ;
+                sum += allPercentageChanges[j][i] * stockDelta[j] ;
             deltaP[i] = sum;
         }
+        /**
+         * GET VaR
+         */
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
-        System.out.println("\t\tValue at Risk: " + deltaP[(int) index]);
+        System.out.println("\n\t\tValue at Risk: " + deltaP[(int) index]);
     }
 }
 

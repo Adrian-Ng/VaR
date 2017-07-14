@@ -8,6 +8,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+
+
 /**
  * THIS PROCESS WILL ACCESS THE GOOGLE FINANCE API AND WRITE FINANCIAL DATA TO CSV
  * THE INPUT ARGUMENTS ARE:
@@ -34,6 +36,7 @@ public class getData {
         in.readLine();//SKIP HEADER
         while ((inputLine = in.readLine()) != null) {
             String[] strTuple = inputLine.split(",");
+            //System.out.println(Arrays.toString(strTuple));
             //myData thisTuple = new myData();
             //SET myData
             //thisTuple.setDate(strTuple[0]);                                //Date
@@ -91,25 +94,43 @@ public class getData {
 
 
     public static void main(String args[]) throws IOException{
-        // TAKE USER INPUT AND SPLIT IT
-        String[] symbols = args[0].split("\\|");
-        // NUMBER OF DAYS IN THE PAST TO LOOK AT
-        int intDays = Integer.parseInt(args[1]);
-        int numSym = symbols.length;
-        double[][] stockPrices = new double[numSym][intDays];
         System.out.println("=========================================================================");
         System.out.println("getData.java");
         System.out.println("=========================================================================");
+        /**
+         * 1st Argument: Stock Symbols
+         * 2nd Argument: Stock Deltas
+         * 3rd Argument: Number of Days of Data
+         * 4th Argument: Time Horizon
+         * 5th Argument: Confidence Level
+         */
+        //SPLIT PIPE DELIMITED LIST OF STOCK SYMBOLS
+        String[] symbols = args[0].split("\\|");
+        int numSym = symbols.length;
+        //SPLIT PIPE DELIMITED LIST OF STOCK DELTA
+        String[] strStockDelta = args[1].split("\\|");
+        int[] stockDelta = new int[strStockDelta.length];
+        for(int i = 0; i< strStockDelta.length;i++)
+            stockDelta[i] = Integer.parseInt(strStockDelta[i]);
+        // NUMBER OF DAYS IN THE PAST TO LOOK AT
+        int intDays = Integer.parseInt(args[2]);
+        // TIME HORIZON
+        int timeHorizonN = Integer.parseInt(args[3]);
+        // CONFIDENCE INTERVAL
+        double confidenceX = Double.parseDouble(args[4]);
+
+        double[][] stockPrices = new double[numSym][intDays];
+
 
         System.out.println("\tFetching VaR.Historic Stock Data from " + intDays + " working day(s) ago:");
         //GET FINANCIAL DATA FOR EACH SYMBOL
         for (int i = 0; i < numSym; i++) {
             System.out.println("\t" + symbols[i]); // debugging
             int size;
-            int decrementDays = intDays;
+            int incrementDays = intDays;
             //DO THIS UNTIL WE GET THIS RIGHT NUMBER OF ROWS OF DATA!
             do {
-                String fromStrAPI = CalculateDateFromIntDays(decrementDays);
+                String fromStrAPI = CalculateDateFromIntDays(incrementDays);
                 //SET urlStrAPI
                 String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
                 BufferedReader in = parseCSV(symbols[i], urlStrAPI);
@@ -117,19 +138,22 @@ public class getData {
                 ArrayList<Double> alData = setData(in);
                 in.close();
                 size = alData.size();
-                if (size == intDays) {
+                //System.out.println(size);
+                if (size >= intDays) {
                     System.out.println("\t\tRetrieved " + size + " rows of data");
                     System.out.println("\t\t" + urlStrAPI);
                     //CONVERT ARRAY LIST DOUBLE TO ARRAY DOUBLE
                     for(int j = 0; j < intDays; j++)
                         stockPrices[i][j] = alData.get(j);
+                    break;
                 }
-                decrementDays++;
+                incrementDays++;
             }while(size <= intDays);
         }
-        Analytical.main(symbols, stockPrices);
-        MonteCarlo.main(symbols, stockPrices);
-        Historic.main(symbols, stockPrices);
-        //BackTest.main(symbols, stockPrices);
+        //Analytical.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        Linear.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        MonteCarlo.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        Historic.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        //BackTest.main(symbols, stockPrices,stockDelta);
     }
 }
