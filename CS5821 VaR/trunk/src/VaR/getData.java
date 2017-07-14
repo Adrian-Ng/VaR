@@ -150,10 +150,10 @@ public class getData {
                 incrementDays++;
             }while(size <= intDays);
         }
-        //Analytical.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        Analytical.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         Linear.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         MonteCarlo.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         Historic.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
-        //BackTest.main(symbols, stockPrices,stockDelta);
+        //BackTest.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
     }
 }

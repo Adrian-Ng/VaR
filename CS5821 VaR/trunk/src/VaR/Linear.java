@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 /**
  * Created by Adrian on 14/07/2017.
+ * Referencing Paul Wilmott Chapter 22 and Hull Chapter 21
  */
 public class Linear {
 
@@ -39,7 +40,7 @@ public static void main(String[] symbol, double[][] stockPrices, int[] stockDelt
      * CALCULATE CORRELATION MATRIX
      */
     double[][] correlationMatrix = new double[numSym][numSym];
-    System.out.println("\n\t\tMatrix of Correlation Coefficients:");
+    System.out.println("\n\t\tCorrelation Matrix:");
     for (int i = 0; i < numSym; i++) {
         for (int j = 0; j < numSym; j++) {
             double covXY = new StockParam(priceChanges[i], priceChanges[j]).getCovariance();
@@ -60,12 +61,10 @@ public static void main(String[] symbol, double[][] stockPrices, int[] stockDelt
 
     double sum = 0;
     for(int i = 0; i < numSym; i++)
-        for(int j = 0; j <= i; j++) {
-            sum += stockDelta[i] * stockDelta[j] * stDevVector[i] * stDevVector[j] * correlationMatrix[i][j];
-            System.out.println("\n" + stockDelta[i] + "*" + stockDelta[j] + "*" + stDevVector[i]  + "*" +  + stDevVector[j] + correlationMatrix[i][j]);
-        }
+        for(int j = 0; j < numSym; j++)
+            sum += stockDelta[i] * stockDelta[j] * stDevVector[i] * stDevVector[j] * currentStockPrices[i] * currentStockPrices[j] * correlationMatrix[i][j];
 
-    double VaR = Math.sqrt(timeHorizonN) * riskPercentile * Math.sqrt(sum);
+    double VaR = Math.sqrt(timeHorizonN/252.0) * riskPercentile * Math.sqrt(sum);
 
     System.out.println("\n\t\tValue at Risk: " + VaR);
     }
