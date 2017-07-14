@@ -1,11 +1,14 @@
 package VaR;
+
+import java.util.Arrays;
+
 /**
  * Created by Adrian on 08/07/2017.
  */
 public class StockParam {
     //instance variable
     private double[] singleStock;
-    private int numTuple;
+
 
     private double[] xStock;
     private double[] yStock;
@@ -15,7 +18,7 @@ public class StockParam {
     public StockParam(double[] singleStock)
     {
         this.singleStock = singleStock;
-        numTuple =  singleStock.length;
+
     }
 
     public StockParam(double[] xStock, double[] yStock){
@@ -29,6 +32,7 @@ public class StockParam {
     }
 
     public double getEqualWeightVolatility() {
+        int numTuple =  singleStock.length;
         double arrU[] = new double [numTuple-1];
         //GENERATE ARRAY OF PRICE DIFFERENCES
         for (int i = 0; i < (numTuple-1); i++)
@@ -44,6 +48,7 @@ public class StockParam {
 
     public double getEWMAVolatility(){
         double lambda = 0.94;
+        int numTuple =  singleStock.length;
         double arrU[] = new double [numTuple-1];
         //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u^2
         for (int i = 0; i < (numTuple-1); i++)
@@ -56,6 +61,7 @@ public class StockParam {
     }
 
     public double getMean(){
+        int numTuple =  singleStock.length;
         double sum = 0;
         for (int i = 0; i< numTuple; i++)
             sum += singleStock[i];
@@ -63,6 +69,7 @@ public class StockParam {
     }
 
     public double getVariance(){
+        int numTuple =  singleStock.length;
         double mean = getMean();
         double sum = 0;
         for (int i = 0; i< numTuple; i++)
@@ -101,18 +108,24 @@ public class StockParam {
     public double[][] getCholeskyDecomposition(){
         double[][] covarianceMatrix = new StockParam(multiStock).getCovarianceMatrix();
         double[][] cholesky = new double[covarianceMatrix.length][covarianceMatrix.length];
+        //Initialize the matrix as all zeroes
+        for(int i = 0; i < cholesky.length;i++)
+            for(int j = 0; j < cholesky.length;j++)
+                cholesky[i][j] = 0;
+
         //Start at the top right
         cholesky[0][0] = Math.sqrt(covarianceMatrix[0][0]);
         for(int i = 1; i < covarianceMatrix.length; i++)
-            for(int j = 0; j < covarianceMatrix.length; j++)
+            for(int j = 0; j <= i; j++)
                 if(i == j && j > 0 ) {
                     double sum = 0;
                     for(int k = 0; k < j;k++)
                         sum += Math.pow(cholesky[i][k],2);
                     cholesky[i][j] = Math.sqrt(covarianceMatrix[i][j] - sum);
                 }
-                else if (i != j)
-                cholesky[i][j] = covarianceMatrix[i][j]/cholesky[j][j];
+                else if (i != j) {
+                    cholesky[i][j] = covarianceMatrix[i][j] / cholesky[j][j];
+                }
         return cholesky;
     }
 

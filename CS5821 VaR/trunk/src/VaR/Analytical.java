@@ -6,17 +6,15 @@ import org.apache.commons.math3.distribution.NormalDistribution;
  */
 public class Analytical {
 
-    public static void main(String[] symbol, double[][] stockPrices){
-        long    portfolioPi[]     = {100,200};
-        double  confidenceX     = 0.99;
-        int     timeHorizonN    = 1;
+    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX){
+        System.out.println("=========================================================================");
+        System.out.println("Analytical.java");
+        System.out.println("=========================================================================");
         NormalDistribution distribution = new NormalDistribution(0,1);
         double riskPercentile = - distribution.inverseCumulativeProbability(1-confidenceX);
         double singleSTDperday[] = new double[symbol.length];
 
-        System.out.println("=========================================================================");
-        System.out.println("Analytical.java");
-        System.out.println("=========================================================================");
+
 
         for (int i = 0; i < symbol.length; i++) {
             System.out.println("\t" + symbol[i]);
@@ -35,7 +33,7 @@ public class Analytical {
             System.out.println("\t\tYearly EWMA Volatility is: " + yearlyEWMA);
             */
             //Print Single Stock VaR
-            singleSTDperday[i] = portfolioPi[i] * dailyEWMA * Math.sqrt(timeHorizonN);
+            singleSTDperday[i] = stockDelta[i] * dailyEWMA * Math.sqrt(timeHorizonN);
             System.out.println("\t\tStandard deviation of daily changes: " + singleSTDperday[i]);
             double VaR = singleSTDperday[i] * riskPercentile;
             System.out.println("\t\tVaR for " + symbol[i] + " over " + timeHorizonN + " day: " + VaR);
@@ -47,5 +45,4 @@ public class Analytical {
         double stdXY = Math.sqrt(Math.pow(stdX,2) + Math.pow(stdY,2) + 2*rhoXY*stdX*stdY);
         System.out.println("\n\t\tValue at Risk for the whole portfolio over " + timeHorizonN + " day: " + stdXY * riskPercentile);
     }
-
 }
