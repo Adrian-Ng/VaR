@@ -1,48 +1,53 @@
 package VaR;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+
+import java.util.Arrays;
+
 /**
  * Created by Adrian on 21/06/2017.
+ * Referencing Paul Wilmott Chapter 22 and Hull Chapter 21
  */
 public class Analytical {
 
-    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX){
+    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("Analytical.java");
         System.out.println("=========================================================================");
-        NormalDistribution distribution = new NormalDistribution(0,1);
-        double riskPercentile = - distribution.inverseCumulativeProbability(1-confidenceX);
-        double singleSTDperday[] = new double[symbol.length];
-
-
-
+        NormalDistribution distribution = new NormalDistribution(0, 1);
+        double riskPercentile = -distribution.inverseCumulativeProbability(1 - confidenceX);
+        int numSym = symbol.length;
+        double[] currentStockPrices = new double[numSym];
+        /**
+         * WHAT DOES THE PORTFOLIO LOOK LIKE?
+         */
         for (int i = 0; i < symbol.length; i++) {
-            System.out.println("\t" + symbol[i]);
-            StockParam thisStock = new StockParam(stockPrices[i]);
-            //Get Volatilities
-            double dailyEqualWeight = thisStock.getEqualWeightVolatility();
-            double yearlyEqualWeight = thisStock.getEqualWeightVolatility() * Math.sqrt(252);
-            double dailyEWMA = thisStock.getEWMAVolatility();
-            double yearlyEWMA = thisStock.getEWMAVolatility() * Math.sqrt(252);
-           /*
-            //Print Volatilities
-            System.out.println("\n\t$" + portfolioPi[i] + " in " + sym);
-            System.out.println("\t\tDaily Equal Weighted Volatility is: " + dailyEqualWeight);
-            System.out.println("\t\tYearly Equal Weighted Volatility is: " + yearlyEqualWeight);
-            System.out.println("\t\tDaily EWMA Volatility is: " + dailyEWMA);
-            System.out.println("\t\tYearly EWMA Volatility is: " + yearlyEWMA);
-            */
-            //Print Single Stock VaR
-            singleSTDperday[i] = stockDelta[i] * dailyEWMA * Math.sqrt(timeHorizonN);
-            System.out.println("\t\tStandard deviation of daily changes: " + singleSTDperday[i]);
-            double VaR = singleSTDperday[i] * riskPercentile;
-            System.out.println("\t\tVaR for " + symbol[i] + " over " + timeHorizonN + " day: " + VaR);
+            currentStockPrices[i] = stockPrices[i][0];
+            System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
         }
-        double stdX = singleSTDperday[0];
-        double stdY = singleSTDperday[1];
-        double covXY = new StockParam(stockPrices[0],stockPrices[1]).getCovariance();
-        double rhoXY = covXY/(stdX*stdY);
-        double stdXY = Math.sqrt(Math.pow(stdX,2) + Math.pow(stdY,2) + 2*rhoXY*stdX*stdY);
-        System.out.println("\n\t\tValue at Risk for the whole portfolio over " + timeHorizonN + " day: " + stdXY * riskPercentile);
+        double currentValue = 0;
+        for (int i = 0; i < symbol.length; i++) {
+            currentValue += stockDelta[i] * currentStockPrices[i];
+        }
+        System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
+
+        /**
+         * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
+         */
+        double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
+
+        /**
+         * CALCULATE VECTOR OF STANDARD DEVIATIONS
+         */
+        double[] stDevVector = new double[numSym];
+        for (int i = 0; i < numSym; i++)
+            stDevVector[i] = new StockParam(priceChanges[i]).getStandardDeviation();
+        System.out.println("\n\t\t Standard Deviation: " + Arrays.toString(stDevVector));
+
+        double VaR[] = new double[numSym];
+        for (int i = 0; i < numSym; i++){
+            VaR[i] = stDevVector[i] * stockDelta[i] * currentStockPrices[i] * Math.sqrt(timeHorizonN / 252.0) * riskPercentile;
+            System.out.println("\n\t\tValue At Risk " + symbol[i] + ": " + VaR[i]);
+        }
     }
 }
