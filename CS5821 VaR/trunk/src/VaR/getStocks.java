@@ -33,7 +33,7 @@ public class getStocks {
         //https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
     }
 
-    public static ArrayList<Double> parseCSV(BufferedReader in) throws IOException{
+    public static ArrayList<Double> getStocksfromCSV(BufferedReader in) throws IOException{
         String inputLine;
         ArrayList<Double> alData = new ArrayList<Double>();
         in.readLine();//SKIP HEADER
@@ -91,7 +91,7 @@ public class getStocks {
                 String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
                 BufferedReader csv = getCSVfromURL(urlStrAPI);
                 //writeCSV(sym, in); //FOR DEBUGGING
-                ArrayList<Double> alData = parseCSV(csv);
+                ArrayList<Double> alData = getStocksfromCSV(csv);
                 csv.close();
                 size = alData.size();
                 //System.out.println(size);
