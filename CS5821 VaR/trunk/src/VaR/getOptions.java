@@ -5,8 +5,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
 import java.text.ParseException;
-
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.*;
 
@@ -32,14 +39,35 @@ public class getOptions {
         return rootobj;
     }
 
-    public static optionsData getOptionsfromJSON(JsonObject json){
+    public static long getNumDaystoExpiry(String expiryYear, String expiryMonth, String expiryDayofMonth) {
+        Calendar cal = new GregorianCalendar();
+        DateFormat format = new SimpleDateFormat("yyyy MM d", Locale.ENGLISH);
+
+        Date expiryDate = null;
+        Date currentDate = new Date();
+        try {
+            expiryDate = format.parse(expiryYear + " " + expiryMonth + " " + expiryDayofMonth);
+        } catch (ParseException e){
+            e.printStackTrace();
+        }
+        System.out.println(expiryDate);
+        //https://stackoverflow.com/questions/20165564/calculating-days-between-two-dates-with-in-java
+        long diff = expiryDate.getTime() - currentDate.getTime();
+        long NumDaystoExpiry = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+
+        return NumDaystoExpiry;
+    }
+
+    public static optionsData getOptionsfromJSON(JsonObject json) {
+        //https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
+        optionsData options = new optionsData();
         JsonObject expiry = json.get("expiry").getAsJsonObject();
         String expiryYear = expiry.get("y").toString();
         String expiryMonth = expiry.get("m").toString();
-        String expiryDay = expiry.get("d").toString();
-        System.out.println(expiryYear + "-" + expiryMonth + "-" + expiryDay);
-
-        optionsData options = new optionsData();
+        String expiryDayofMonth = expiry.get("d").toString();
+        //System.out.println(expiryYear + "-" + expiryMonth + "-" + expiryDayofMonth);
+        long NumDaystoExpiry = getNumDaystoExpiry(expiryYear, expiryMonth, expiryDayofMonth);
+        System.out.println(NumDaystoExpiry);
 
         JsonArray jsonPuts = json.get("puts").getAsJsonArray();
         int numPuts = jsonPuts.size();
@@ -64,25 +92,24 @@ public class getOptions {
         JsonArray jsonCalls = json.get("calls").getAsJsonArray();
         int numCalls = jsonCalls.size();
         double[] callPrices = new double[numCalls];
-        for(int i = 0; i < numCalls; i++){
+        for(int i = 0; i < numCalls; i++) {
             JsonElement jsonElementCall = jsonCalls.get(i);
             JsonObject jsonObjectCall = jsonElementCall.getAsJsonObject();
             try {
                 callPrices[i] = Double.parseDouble(jsonObjectCall.get("p").getAsString().replace(",", ""));
-            } catch(NumberFormatException e){
+            } catch (NumberFormatException e) {
                 callPrices[i] = Double.NaN;
             }
             //System.out.println(callPrices[i]);
         }
-
         options.setCallPrices(callPrices);
         options.setPutPrices(putPrices);
         options.setStrikePrices(strikePrices);
+        options.setDaystoMaturity(NumDaystoExpiry);
         return options;
     }
 
-
-    public static void main(String[] symbols)  throws IOException{
+    public static optionsData[] main(String[] symbols)  throws IOException{
         System.out.println("=========================================================================");
         System.out.println("getOptions.java");
         System.out.println("=========================================================================");
@@ -90,12 +117,12 @@ public class getOptions {
         /**
          * GET OPTIONS CHAIN FOR EACH SYMBOL
          */
+        optionsData[] options = new optionsData[numSym];
         for(int i = 0; i < numSym; i++){
             String urlStrAPI = "http://www.google.com/finance/option_chain?q=" + symbols[i] + "&output=json";
             JsonObject json = getJSONfromURL(urlStrAPI);
-
-           optionsData options = getOptionsfromJSON(json);
+            options[i] = getOptionsfromJSON(json);
         }
-
+        return options;
     }
 }

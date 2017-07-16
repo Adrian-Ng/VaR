@@ -34,15 +34,15 @@ public class ValueAtRisk {
         // CONFIDENCE INTERVAL
         double confidenceX = Double.parseDouble(args[4]);
 
-        //double[][] stockPrices = getStocks.main(symbols, intDays);
-        getOptions.main(symbols);
-/*
+        double[][] stockPrices = getStocks.main(symbols, intDays);
+        optionsData[] options = getOptions.main(symbols);
+
         double[] analyticalVaR = Analytical.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         double linearVaR = Linear.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         double montecarloVaR = MonteCarlo.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         double historicVaR = Historic.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
         //BackTest.main(symbols, stockPrices,stockDelta, timeHorizonN, confidenceX);
-*/
+
     }
 
 }
