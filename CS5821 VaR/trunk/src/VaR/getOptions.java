@@ -1,15 +1,12 @@
 package VaR;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.NumberFormat;
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Locale;
+
 
 import com.google.gson.*;
 
@@ -21,7 +18,7 @@ public class getOptions {
 
 
 
-    public static JsonObject getJSON(String urlStrAPI) throws IOException{
+    public static JsonObject getJSONfromURL(String urlStrAPI) throws IOException{
         //https://stackoverflow.com/a/21964051 user2654569
         URL url = new URL(urlStrAPI);
         HttpURLConnection request = (HttpURLConnection) url.openConnection();
@@ -35,14 +32,14 @@ public class getOptions {
         return rootobj;
     }
 
-    public static void parseJSON(JsonObject json){
+    public static optionsData getOptionsfromJSON(JsonObject json){
         JsonObject expiry = json.get("expiry").getAsJsonObject();
         String expiryYear = expiry.get("y").toString();
         String expiryMonth = expiry.get("m").toString();
         String expiryDay = expiry.get("d").toString();
         System.out.println(expiryYear + "-" + expiryMonth + "-" + expiryDay);
 
-
+        optionsData options = new optionsData();
 
         JsonArray jsonPuts = json.get("puts").getAsJsonArray();
         int numPuts = jsonPuts.size();
@@ -51,11 +48,18 @@ public class getOptions {
         for(int i = 0; i < numPuts; i++){
             JsonElement jsonElementPut = jsonPuts.get(i);
             JsonObject jsonObjectPut = jsonElementPut.getAsJsonObject();
-            strikePrices[i] = Double.parseDouble(jsonObjectPut.get("strike").getAsString().replace(",",""));
-            putPrices[i] = Double.parseDouble(jsonObjectPut.get("p").getAsString().replace(",",""));
-            System.out.println(putPrices[i]);
+            try {
+                strikePrices[i] = Double.parseDouble(jsonObjectPut.get("strike").getAsString().replace(",",""));
+            } catch(NumberFormatException e){
+                strikePrices[i] = Double.NaN;
+            }
+            try {
+                putPrices[i] = Double.parseDouble(jsonObjectPut.get("p").getAsString().replace(",", ""));
+            } catch(NumberFormatException e) {
+                putPrices[i] = Double.NaN;
+            }
+            //System.out.println(putPrices[i]);
         }
-
 
         JsonArray jsonCalls = json.get("calls").getAsJsonArray();
         int numCalls = jsonCalls.size();
@@ -63,10 +67,18 @@ public class getOptions {
         for(int i = 0; i < numCalls; i++){
             JsonElement jsonElementCall = jsonCalls.get(i);
             JsonObject jsonObjectCall = jsonElementCall.getAsJsonObject();
-            callPrices[i] = Double.parseDouble(jsonObjectCall.get("p").getAsString().replace(",",""));
-            System.out.println(callPrices[i]);
+            try {
+                callPrices[i] = Double.parseDouble(jsonObjectCall.get("p").getAsString().replace(",", ""));
+            } catch(NumberFormatException e){
+                callPrices[i] = Double.NaN;
+            }
+            //System.out.println(callPrices[i]);
         }
 
+        options.setCallPrices(callPrices);
+        options.setPutPrices(putPrices);
+        options.setStrikePrices(strikePrices);
+        return options;
     }
 
 
@@ -80,9 +92,9 @@ public class getOptions {
          */
         for(int i = 0; i < numSym; i++){
             String urlStrAPI = "http://www.google.com/finance/option_chain?q=" + symbols[i] + "&output=json";
-            JsonObject json = getJSON(urlStrAPI);
+            JsonObject json = getJSONfromURL(urlStrAPI);
 
-            parseJSON(json);
+           optionsData options = getOptionsfromJSON(json);
         }
 
     }
