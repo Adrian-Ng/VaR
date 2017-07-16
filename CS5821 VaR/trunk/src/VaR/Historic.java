@@ -8,7 +8,7 @@ import java.util.Arrays;
  */
 public class Historic {
 
-    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX){
+    public static double main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX){
         System.out.println("=========================================================================");
         System.out.println("Historic.java");
         System.out.println("=========================================================================");
@@ -44,8 +44,13 @@ public class Historic {
                 sum += priceChanges[j][i] * stockDelta[j];
             deltaP[i] = sum;
         }
+        /**
+         * GET VaR
+         */
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
-        System.out.println("\n\t\tValue at Risk: " + deltaP[(int) index]);
+        double VaR = deltaP[(int) index];
+        System.out.println("\n\t\tValue at Risk: " + VaR);
+        return VaR;
     }
 }
