@@ -8,7 +8,7 @@ public class optionsData {
     private double[] callPrices;
     private double[] putPrices;
     private double[] strikePrices;
-    private double[] daystoMaturity;
+    private long daystoMaturity;
     //GETTERS
     public double[] getCallPrices(){
         return this.callPrices;
@@ -19,7 +19,7 @@ public class optionsData {
     public double[] getStrikePrices(){
         return this.strikePrices;
     }
-    public double[] getDaystoMaturity(){
+    public long getDaystoMaturity(){
         return this.daystoMaturity;
     }
     //SETTERS
@@ -32,7 +32,7 @@ public class optionsData {
     public void setStrikePrices(double[] strikePrices){
         this.strikePrices = strikePrices;
     }
-    public void setDaystoMaturity(double[] daystoMaturity){
+    public void setDaystoMaturity(long daystoMaturity){
         this.daystoMaturity = daystoMaturity;
     }
 }
