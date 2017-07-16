@@ -10,7 +10,7 @@ import java.util.Arrays;
  */
 public class Analytical {
 
-    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
+    public static double[] main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("Analytical.java");
         System.out.println("=========================================================================");
@@ -42,12 +42,12 @@ public class Analytical {
         double[] stDevVector = new double[numSym];
         for (int i = 0; i < numSym; i++)
             stDevVector[i] = new StockParam(priceChanges[i]).getStandardDeviation();
-        System.out.println("\n\t\t Standard Deviation: " + Arrays.toString(stDevVector));
 
         double VaR[] = new double[numSym];
         for (int i = 0; i < numSym; i++){
             VaR[i] = stDevVector[i] * stockDelta[i] * currentStockPrices[i] * Math.sqrt(timeHorizonN / 252.0) * riskPercentile;
             System.out.println("\n\t\tValue At Risk " + symbol[i] + ": " + VaR[i]);
         }
+        return VaR;
     }
 }

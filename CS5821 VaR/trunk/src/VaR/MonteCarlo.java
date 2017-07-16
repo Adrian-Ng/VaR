@@ -47,7 +47,7 @@ public class MonteCarlo {
         return terminalPercentChange;
     }
 
-    public static void main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
+    public static double main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
@@ -120,7 +120,9 @@ public class MonteCarlo {
          */
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
-        System.out.println("\n\t\tValue at Risk: " + deltaP[(int) index]);
+        double VaR = deltaP[(int) index];
+        System.out.println("\n\t\tValue at Risk: " + VaR);
+        return VaR;
     }
 }
 
