@@ -2,10 +2,11 @@ package VaR;
 
 import java.io.*;
 import java.net.URL;
-import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+
 
 
 /**
@@ -13,7 +14,7 @@ import java.util.ArrayList;
  * THE INPUT ARGUMENTS ARE:
  * 1st Argument: Stock Symbols
  * 2nd Argument: Stock Deltas
- * 3rd Argument: Number of Days of Data
+ * 3rd Argument: Number of Years of Data
  * 4th Argument: Time Horizon
  * 5th Argument: Confidence Level
 
@@ -51,61 +52,47 @@ public class getStocks {
         return alData;
     }
 
-    public static String CalculateDateFromIntDays(int intDays){
+    public static String CalculateYearDiffReturnDateAsString(int intYears){
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM+dd,+yyyy");
-        int i = 0;
-        int j = 0;
-        while(i < intDays){
-            if(LocalDateTime.now().minusDays(j).getDayOfWeek() == DayOfWeek.SATURDAY)
-                i--;
-             else if (LocalDateTime.now().minusDays(j).getDayOfWeek()== DayOfWeek.SUNDAY)
-                i--;
-            i++;
-            j++;
-        }
-        LocalDateTime daysAgo = LocalDateTime.now().minusDays(j);
+        LocalDateTime yearsAgo = LocalDateTime.now().minusYears(intYears);
         //https://stackoverflow.com/questions/22463062/how-to-parse-format-dates-with-localdatetime-java-8
-        String fromstr = daysAgo.format(formatter);
+        String fromstr = yearsAgo.format(formatter);
         //CONVERT COMMA TO UNICODE
         fromstr = fromstr.replace(",","%2C");
         return fromstr;
     }
 
-    public static double[][] main(String[] symbols, int intDays) throws IOException{
+    public static double[][] main(String[] symbols, int intYears) throws IOException{
         System.out.println("=========================================================================");
         System.out.println("getStocks.java");
         System.out.println("=========================================================================");
         int numSym = symbols.length;
-        //TO BE POPULATED
-        double[][] stockPrices = new double[numSym][intDays];
-        System.out.println("\tFetching VaR.Historic Stock Data from " + intDays + " working day(s) ago:");
+        HashMap<String, ArrayList<Double>> mapStocks = new HashMap<>();
+        System.out.println("\tFetching VaR.Historic Stock Data from " + intYears + " years(s) ago:");
         //GET STOCK DATA FOR EACH SYMBOL
         for (int i = 0; i < numSym; i++) {
             System.out.println("\t" + symbols[i]); // debugging
-            int size;
-            int incrementDays = intDays;
-            //DO THIS UNTIL WE GET THIS RIGHT NUMBER OF ROWS OF DATA!
-            do {
-                String fromStrAPI = CalculateDateFromIntDays(incrementDays);
-                //SET urlStrAPI
-                String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
-                BufferedReader csv = getCSVfromURL(urlStrAPI);
-                //writeCSV(sym, in); //FOR DEBUGGING
-                ArrayList<Double> alData = getStocksfromCSV(csv);
-                csv.close();
-                size = alData.size();
-                //System.out.println(size);
-                if (size >= intDays) {
-                    System.out.println("\t\tRetrieved " + size + " rows of Stock data");
-                    System.out.println("\t\t" + urlStrAPI);
-                    //CONVERT ARRAY LIST DOUBLE TO ARRAY DOUBLE
-                    for(int j = 0; j < intDays; j++)
-                        stockPrices[i][j] = alData.get(j);
-                    break;
-                }
-                incrementDays++;
-            }while(size <= intDays);
+            String fromStrAPI = CalculateYearDiffReturnDateAsString(intYears);
+            //SET urlStrAPI
+            String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
+            BufferedReader csv = getCSVfromURL(urlStrAPI);
+            //writeCSV(sym, in); //FOR DEBUGGING
+            ArrayList<Double> alData = getStocksfromCSV(csv);
+            csv.close();
+            int size = alData.size();
+            System.out.println("\t\tRetrieved " + size + " rows of Stock data");
+            System.out.println("\t\t" + urlStrAPI);
+            //CONVERT ARRAY LIST DOUBLE TO ARRAY DOUBLE
+            mapStocks.put(symbols[i], alData);
         }
+        int numTuples = new ArrayList<Double>(mapStocks.get(symbols[0])).size();
+        double[][] stockPrices = new double[numSym][numTuples];
+        //POPULATE stockPrices ARRAY. FEED DATA FROM HashMap mapStocks
+        for(int i = 0; i < numSym; i++)
+            for(int j =0; j < numTuples; j++) {
+                ArrayList<Double> arrayListStockPrices = mapStocks.get(symbols[i]);
+                stockPrices[i][j] = arrayListStockPrices.get(j);
+            }
         return stockPrices;
     }
 }

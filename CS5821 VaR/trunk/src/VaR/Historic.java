@@ -23,7 +23,7 @@ public class Historic {
             System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
         }
         double currentValue = 0;
-        for (int i = 0; i < symbol.length; i++) {
+        for (int i = 0; i < numSym; i++) {
             currentValue += stockDelta[i] * currentStockPrices[i];
         }
         System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
@@ -34,22 +34,26 @@ public class Historic {
         double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
 
         /**
-         * CALCULATE CHANGE IN VALUE OF PORTFOLIO ON EVERY DAY
+         * REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES
           */
-        double[] deltaP = new double[stockPrices[0].length-1];
+        double[] deltaP = new double[priceChanges[0].length];
 
         for(int i = 0; i < priceChanges[0].length;i++) {
             double sum = 0;
-            for (int j = 0; j < symbol.length; j++)
-                sum += priceChanges[j][i] * stockDelta[j];
+            for (int j = 0; j < numSym; j++)
+                sum += priceChanges[j][i] * currentStockPrices[j] * stockDelta[j];
             deltaP[i] = sum;
         }
         /**
          * GET VaR
          */
         Arrays.sort(deltaP);
+/*
+        for(int i = 0; i < deltaP.length; i++)
+            System.out.println(deltaP[i]);
+*/
         double index = (1-confidenceX)*deltaP.length;
-        double VaR = deltaP[(int) index];
+        double VaR = currentValue - deltaP[(int) index];
         System.out.println("\n\t\tValue at Risk: " + VaR);
         return VaR;
     }

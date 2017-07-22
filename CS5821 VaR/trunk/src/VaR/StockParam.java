@@ -138,5 +138,15 @@ public class StockParam {
         return priceDiff;
     }
 
+    public double[][] getAbsoluteChanges(){
+        int numSym = multiStock.length;
+        int numTuples = multiStock[0].length;
+        double[][] priceDiff = new double[numSym][numTuples - 1];
+        for  (int i = 0;i < numSym;i++)
+            for (int j = 0; j < numTuples - 1; j++)
+                priceDiff[i][j] = multiStock[i][j]-multiStock[i][j+1];
+        return priceDiff;
+    }
+
 }
 
