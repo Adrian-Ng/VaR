@@ -106,13 +106,13 @@ public class MonteCarlo {
         }
 
         /**
-         * CALCULATE CHANGE IN PORTFOLIO VALUE FROM SIMULATED PERCENTAGE CHANGES
+         * REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES
          */
         double[] deltaP = new double[allPercentageChanges[0].length];
         for(int i = 0; i < allPercentageChanges[0].length;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += allPercentageChanges[j][i] * stockDelta[j] ;
+                sum += allPercentageChanges[j][i] * stockDelta[j] * currentStockPrices[j];
             deltaP[i] = sum;
         }
         /**
@@ -120,7 +120,7 @@ public class MonteCarlo {
          */
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
-        double VaR = deltaP[(int) index];
+        double VaR = currentValue - deltaP[(int) index];
         System.out.println("\n\t\tValue at Risk: " + VaR);
         return VaR;
     }

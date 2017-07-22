@@ -71,7 +71,7 @@ public static double main(String[] symbol, double[][] stockPrices, int[] stockDe
         for(int j = 0; j < numSym; j++)
             //sum += stockDelta[i] * stockDelta[j] * currentStockPrices[i] * currentStockPrices[j] * correlationMatrix[i][j] * stDevVector[i] * stDevVector[j];
             sum += stockDelta[i] * stockDelta[j] * currentStockPrices[i] * currentStockPrices[j] * covarianceMatrix[i][j];
-    double VaR = Math.sqrt(timeHorizonN/252.0) * riskPercentile * Math.sqrt(sum);
+    double VaR = Math.sqrt(timeHorizonN) * riskPercentile * Math.sqrt(sum);
 
     System.out.println("\n\t\tValue at Risk: " + VaR);
 

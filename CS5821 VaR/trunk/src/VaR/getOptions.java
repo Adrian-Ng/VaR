@@ -23,8 +23,6 @@ import com.google.gson.*;
  */
 public class getOptions {
 
-
-
     public static JsonObject getJSONfromURL(String urlStrAPI) throws IOException{
         //https://stackoverflow.com/a/21964051 user2654569
         URL url = new URL(urlStrAPI);
@@ -119,10 +117,13 @@ public class getOptions {
          */
         optionsData[] options = new optionsData[numSym];
         for(int i = 0; i < numSym; i++){
+
             String urlStrAPI = "http://www.google.com/finance/option_chain?q=" + symbols[i] + "&output=json";
             JsonObject json = getJSONfromURL(urlStrAPI);
+            System.out.println("\t\t" + urlStrAPI);
             options[i] = getOptionsfromJSON(json);
         }
+
         return options;
     }
 }

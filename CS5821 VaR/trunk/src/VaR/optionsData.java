@@ -32,7 +32,5 @@ public class optionsData {
     public void setStrikePrices(double[] strikePrices){
         this.strikePrices = strikePrices;
     }
-    public void setDaystoMaturity(long daystoMaturity){
-        this.daystoMaturity = daystoMaturity;
-    }
+    public void setDaystoMaturity(long daystoMaturity){ this.daystoMaturity = daystoMaturity; }
 }
