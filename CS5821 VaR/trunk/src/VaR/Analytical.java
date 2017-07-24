@@ -18,18 +18,15 @@ public class Analytical {
         double riskPercentile = -distribution.inverseCumulativeProbability(1 - confidenceX);
         int numSym = symbol.length;
         double[] currentStockPrices = new double[numSym];
+        double[] currentSingleStockValue = new double[numSym];
         /**
          * WHAT DOES THE PORTFOLIO LOOK LIKE?
          */
-        for (int i = 0; i < symbol.length; i++) {
+        for (int i = 0; i < numSym; i++) {
             currentStockPrices[i] = stockPrices[i][0];
-            System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
+            currentSingleStockValue[i] = stockDelta[i] * currentStockPrices[i];
+            System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i] + ". Current Value of Single Stock Portfolio: " + currentSingleStockValue[i]);
         }
-        double currentValue = 0;
-        for (int i = 0; i < symbol.length; i++) {
-            currentValue += stockDelta[i] * currentStockPrices[i];
-        }
-        System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
 
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
@@ -42,10 +39,12 @@ public class Analytical {
         double[] stDevVector = new double[numSym];
         for (int i = 0; i < numSym; i++)
             stDevVector[i] = new StockParam(priceChanges[i]).getStandardDeviation();
-
+        /**
+         * CALCULATE VaR FOR EACH STOCK
+         */
         double VaR[] = new double[numSym];
         for (int i = 0; i < numSym; i++){
-            VaR[i] = stDevVector[i] * stockDelta[i] * currentStockPrices[i] * Math.sqrt(timeHorizonN / 252.0) * riskPercentile;
+            VaR[i] = stDevVector[i] * stockDelta[i] * currentStockPrices[i] * Math.sqrt(timeHorizonN) * riskPercentile;
             System.out.println("\n\t\tValue At Risk " + symbol[i] + ": " + VaR[i]);
         }
         return VaR;
