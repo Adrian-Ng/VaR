@@ -15,24 +15,16 @@ import static org.apache.commons.math3.stat.inference.AlternativeHypothesis.TWO_
  */
 public class BackTest {
 
-    public static void calculatePvalueFromViolations(int[] violations){
-
-    }
-
     public static int[] testCoverage(int[] violations, double confidenceX, int numMoments){
         //https://www.value-at-risk.net/backtesting-coverage-tests/
         int alpha = numMoments + 1;
         double epsilon = 1 - confidenceX;
-        double x1, x2;                 //We reject the VaR measure if the number of violations is not in this interval
         int[] nonRejectionInterval = new int[2];
+        //We reject the VaR measure if the number of violations is not in this interval
         //We don't yet know what this interval is. So we initialize some starting points.
-        nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.25);
-        nonRejectionInterval[1] = (int) (numMoments * (1-confidenceX)*2.0);
+        nonRejectionInterval[0] = (int) (numMoments * epsilon*0.25);
+        nonRejectionInterval[1] = (int) (numMoments * epsilon*2.0);
         BinomialDistribution distribution = new BinomialDistribution(alpha, epsilon);
-        /*BinomialDistribution distribution = new BinomialDistribution(500, 0.05);
-        x1 = 12;
-        x2 = 38;*/
-        //We must set the interval to whatever maximises Pr(X {not in} [x1, x2])
         int a = nonRejectionInterval[0];
         int b = nonRejectionInterval[1];
 
@@ -40,8 +32,8 @@ public class BackTest {
         double[] decrementCDF = new double[b-a];
         for(int i = 0; i < incrementCDF.length; i++) {
             incrementCDF[i] = distribution.cumulativeProbability(a + i);
-            decrementCDF[i] = 1 - distribution.cumulativeProbability(b - i);        }
-
+            decrementCDF[i] = 1 - distribution.cumulativeProbability(b - i);
+        }
         double maximize = 0.0;
         for(int i = 0; incrementCDF[i] <= epsilon/2; i++)
             for(int j = 0; decrementCDF[j] <= epsilon/2; j++){
@@ -55,26 +47,40 @@ public class BackTest {
         return nonRejectionInterval;
     }
 
-    public static void testKupiecPF(int[] violations, double confidenceX, int numMoments){
+    public static int[] testKupiecPF(int[] violations, double confidenceX, int numMoments){
         int[] nonRejectionInterval = new int[2];
-        nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.25);
-        nonRejectionInterval[1] = (int) (numMoments * (1-confidenceX)*2.0);
+        nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.5);
+        nonRejectionInterval[1] = (int) (numMoments * (1-confidenceX)*1.5);
         int alpha = numMoments + 1;
         double q = confidenceX;
-        double epsilon = 1 - confidenceX;
         ChiSquaredDistribution distribution = new ChiSquaredDistribution(1, 0);
         double quantile = distribution.inverseCumulativeProbability(confidenceX);
-        System.out.println(quantile);
         int a = nonRejectionInterval[0];
         int b = nonRejectionInterval[1];
-
-
-
-
-        System.out.println(nonRejectionInterval[0]);
-
-
-        //return nonRejectionInterval;
+        /**CALCULATE LOWER INTERVAL*/
+        double minimize = Double.POSITIVE_INFINITY;
+        for(int i = 0;i < a;i++){
+            double part1 = Math.pow((alpha-(i+a))/(q*alpha),alpha-(i+a));
+            double part2 = Math.pow((i+a)/((1-q)*alpha),(i+a));
+            double diff  = Math.abs(quantile - 2*Math.log(part1*part2));
+            if(diff<minimize) {
+                minimize = Math.min(diff,minimize);
+                nonRejectionInterval[0] = i + a;
+            }
+        }
+        /**CALCULATE UPPER INTERVAL*/
+        minimize = Double.POSITIVE_INFINITY;
+        for(int i = 0;i < a;i++){
+            double part1 = Math.pow((alpha-(b-i))/(q*alpha),alpha-(b-i));
+            double part2 = Math.pow((b-i)/((1-q)*alpha),(b-i));
+            double diff  = Math.abs(quantile - 2*Math.log(part1*part2));
+            if(diff<minimize) {
+                minimize = Math.min(diff,minimize);
+                nonRejectionInterval[1] = b - i + 1;//ADD 1 TO ROUND UP
+            }
+        }
+        //System.out.println(Arrays.toString(nonRejectionInterval));
+        return nonRejectionInterval;
     }
 
     public static double[] testBinomial(int[] violations, int numMoments, double confidenceX){
@@ -126,7 +132,7 @@ public class BackTest {
         /**
          * RETURN VaR FOR EACH MOMENT
          */
-        /*for (int i = 0; i < numMoments; i++) {
+        for (int i = 0; i < numMoments; i++) {
             double[][] stockSubsetInterval = new double[numSym][intervals];
             for (int j = 0; j < numSym; j++)
                 for (int k = i; k < intervals + i; k++)
@@ -137,40 +143,45 @@ public class BackTest {
             momentsVaR[2][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, timeHorizonN, confidenceX);
             System.setOut(originalStream);
         }
-        System.out.println("\n\t" + momentsVaR[0].length + " values of VaR calculated.");*/
+        System.out.println("\n\t" + momentsVaR[0].length + " values of VaR calculated.");
         /**
          * COUNT NUMBER OF DAYS WHERE LOSSES VIOLATE VaR
          */
-/*
         int[] violations = {0, 0, 0};
         for (int i = 0; i < numMoments; i++)
             for (int j = 0; j < numMeasures; j++)
                 if (-momentsVaR[j][i] > deltaP[i])
-                    violations[j]++;*/
-        int[] violations = {41, 75, 43};
-        System.out.println("\n\t\tViolations:\n\t\t\t" + Arrays.toString(violations));
+                    violations[j]++;
+        //int[] violations = {41, 55, 43};
+        System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
         /**
          * STANDARD COVERAGE TEST
          */
-        int[] nonRejectionInterval = testCoverage(violations,confidenceX,numMoments);
-        System.out.println("\n\t\tNon-Rejection Interval from Standard Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionInterval));
+        int[] nonRejectionIntervalStandardCoverage = testCoverage(violations,confidenceX,numMoments);
+        System.out.println("\n\tNon-Rejection Interval from Standard Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalStandardCoverage));
         for(int i = 0; i < violations.length; i++)
-            if(violations[i]<= nonRejectionInterval[0]|| violations[i]>= nonRejectionInterval[1])
-                System.out.println("\t\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
+            if(violations[i]<= nonRejectionIntervalStandardCoverage[0]|| violations[i]>= nonRejectionIntervalStandardCoverage[1])
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
             else
-                System.out.println("\t\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
 
         /**
          * KUPIEC'S PF COVERAGE TEST
          */
-        testKupiecPF(violations,confidenceX,numMoments);
+        int[] nonRejectionIntervalKupiecPF = testKupiecPF(violations,confidenceX,numMoments);
+        System.out.println("\n\t\tNon-Rejection Interval from Kupiec's Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
+        for(int i = 0; i < violations.length; i++)
+            if(violations[i]<= nonRejectionIntervalKupiecPF[0]|| violations[i]>= nonRejectionIntervalKupiecPF[1])
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
+            else
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
 
         /*** BINOMIAL TEST*/
         System.out.println("\n\t\tBinomial Test");
         double[] pvalue = testBinomial(violations,numMoments,confidenceX);
         boolean[] rejectNull = booleanRejectNull(violations,numMoments,confidenceX);
-        System.out.println("\t\t\tP-Values:\t" + Arrays.toString(pvalue));
-        System.out.println("\t\t\tReject:\t" + Arrays.toString(rejectNull));
+        System.out.println("\t\tP-Values:\t" + Arrays.toString(pvalue));
+        System.out.println("\t\tReject:\t" + Arrays.toString(rejectNull));
         return violations;
     }
 }

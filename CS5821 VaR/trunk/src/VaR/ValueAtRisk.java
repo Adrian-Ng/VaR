@@ -1,22 +1,12 @@
 package VaR;
 
-import org.apache.commons.math3.stat.inference.BinomialTest;
-
 import java.io.IOException;
-
-import static org.apache.commons.math3.stat.inference.AlternativeHypothesis.TWO_SIDED;
 
 /**
  * Created by Adrian on 15/07/2017.
  */
 public class ValueAtRisk {
-/*
-    public static void testBinomial(int[] violations, int numMoments, double confidenceX){
-        BinomialDistribution b = new BinomialDistribution(numMoments, confidenceX);
-        for(int i = 0; i < violations.length; i++)
-            System.out.println(b.cumulativeProbability(violations[i]));
-    }
-*/
+
     public static void main(String args[])throws IOException {
 
         System.out.println("=========================================================================");
