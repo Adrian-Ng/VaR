@@ -21,12 +21,12 @@ public static double main(String[] symbol, double[][] stockPrices, int[] stockDe
     /**
      * WHAT DOES THE PORTFOLIO LOOK LIKE?
      */
-    for (int i = 0; i < symbol.length; i++) {
+    for (int i = 0; i < numSym; i++) {
         currentStockPrices[i] = stockPrices[i][0];
         System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
     }
     double currentValue = 0;
-    for (int i = 0; i < symbol.length; i++) {
+    for (int i = 0; i < numSym; i++) {
         currentValue += stockDelta[i] * currentStockPrices[i];
     }
     System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
