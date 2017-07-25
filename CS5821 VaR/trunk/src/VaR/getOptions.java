@@ -32,8 +32,6 @@ public class getOptions {
         JsonParser jp = new JsonParser(); //from gson
         JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent())); //Convert the input stream to a json element
         JsonObject rootobj = root.getAsJsonObject(); //May be an array, may be an object.
-
-        //System.out.println(rootobj);
         return rootobj;
     }
 
@@ -48,11 +46,10 @@ public class getOptions {
         } catch (ParseException e){
             e.printStackTrace();
         }
-        System.out.println(expiryDate);
+        System.out.println("\t\tOptions Expiration Date: " + expiryDate);
         //https://stackoverflow.com/questions/20165564/calculating-days-between-two-dates-with-in-java
         long diff = expiryDate.getTime() - currentDate.getTime();
         long NumDaystoExpiry = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
-
         return NumDaystoExpiry;
     }
 
@@ -63,9 +60,8 @@ public class getOptions {
         String expiryYear = expiry.get("y").toString();
         String expiryMonth = expiry.get("m").toString();
         String expiryDayofMonth = expiry.get("d").toString();
-        //System.out.println(expiryYear + "-" + expiryMonth + "-" + expiryDayofMonth);
         long NumDaystoExpiry = getNumDaystoExpiry(expiryYear, expiryMonth, expiryDayofMonth);
-        System.out.println(NumDaystoExpiry);
+        System.out.println("\t\tDays to Expiration: " + NumDaystoExpiry);
 
         JsonArray jsonPuts = json.get("puts").getAsJsonArray();
         int numPuts = jsonPuts.size();
@@ -117,13 +113,11 @@ public class getOptions {
          */
         optionsData[] options = new optionsData[numSym];
         for(int i = 0; i < numSym; i++){
-
             String urlStrAPI = "http://www.google.com/finance/option_chain?q=" + symbols[i] + "&output=json";
             JsonObject json = getJSONfromURL(urlStrAPI);
             System.out.println("\t\t" + urlStrAPI);
             options[i] = getOptionsfromJSON(json);
         }
-
         return options;
     }
 }
