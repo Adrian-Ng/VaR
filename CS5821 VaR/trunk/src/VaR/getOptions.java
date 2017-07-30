@@ -100,6 +100,7 @@ public class getOptions {
         options.setPutPrices(putPrices);
         options.setStrikePrices(strikePrices);
         options.setDaystoMaturity(NumDaystoExpiry);
+
         return options;
     }
 

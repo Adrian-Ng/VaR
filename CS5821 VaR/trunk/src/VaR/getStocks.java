@@ -76,7 +76,6 @@ public class getStocks {
             //SET urlStrAPI
             String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
             BufferedReader csv = getCSVfromURL(urlStrAPI);
-            //writeCSV(sym, in); //FOR DEBUGGING
             ArrayList<Double> alData = getStocksfromCSV(csv);
             csv.close();
             int size = alData.size();
@@ -85,7 +84,14 @@ public class getStocks {
             //CONVERT ARRAY LIST DOUBLE TO ARRAY DOUBLE
             mapStocks.put(symbols[i], alData);
         }
-        int numTuples = new ArrayList<Double>(mapStocks.get(symbols[0])).size();
+        //LOOP THROUGH EACH SYMBOL AND GET THE MINIMUM SIZE
+        //THIS IS IN CASE YOU HAVE MULTIPLE STOCKS AND THE ARRAYLISTS ARE OF DIFFERENT SIZES
+        int numTuples = Integer.MAX_VALUE;
+        for(int i = 0; i < numSym; i++){
+            int checkSize  = new ArrayList<Double>(mapStocks.get(symbols[i])).size();
+            numTuples =  Math.min(checkSize,numTuples);
+        }
+
         double[][] stockPrices = new double[numSym][numTuples];
         //POPULATE stockPrices ARRAY. FEED DATA FROM HashMap mapStocks
         for(int i = 0; i < numSym; i++)

@@ -97,7 +97,7 @@ public class BackTest {
         return rejectNullHypothesis;
     }
 
-    public static int[] main(String[] symbol, int[] stockDelta, int timeHorizonN, double confidenceX) throws IOException {
+    public static int[] main(String[] symbol, int[] stockDelta, double[][] optionPrices, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
         System.out.println("=========================================================================");
@@ -139,8 +139,8 @@ public class BackTest {
                     stockSubsetInterval[j][k - i] = stockPrices[j][k];
             System.setOut(dummyStream);
             momentsVaR[0][i] = Linear.main(symbol, stockSubsetInterval, stockDelta, timeHorizonN, confidenceX);
-            momentsVaR[1][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, timeHorizonN, confidenceX);
-            momentsVaR[2][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, timeHorizonN, confidenceX);
+            momentsVaR[1][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, optionPrices, optionDelta, timeHorizonN, confidenceX);
+            momentsVaR[2][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, optionPrices, optionDelta, timeHorizonN, confidenceX);
             System.setOut(originalStream);
         }
         System.out.println("\n\t" + momentsVaR[0].length + " values of VaR calculated.");
