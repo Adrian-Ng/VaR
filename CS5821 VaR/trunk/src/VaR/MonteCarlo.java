@@ -47,7 +47,7 @@ public class MonteCarlo {
         return terminalPercentChange;
     }
 
-    public static double main(String[] symbol, double[][] stockPrices, int[] stockDelta, double[][] optionPrices, int[] optionDelta, int timeHorizonN, double confidenceX) {
+    public static double main(String[] symbol, double[][] stockPrices, int[] stockDelta, int[] optionDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");

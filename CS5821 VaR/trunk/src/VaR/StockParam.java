@@ -1,5 +1,8 @@
 package VaR;
 
+import org.apache.commons.math3.fitting.*;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 
 /**
  * Created by Adrian on 08/07/2017.
@@ -17,7 +20,6 @@ public class StockParam {
     public StockParam(double[] singleStock)
     {
         this.singleStock = singleStock;
-
     }
 
     public StockParam(double[] xStock, double[] yStock){
@@ -29,7 +31,7 @@ public class StockParam {
     {
         this.multiStock = multiStock;
     }
-
+/*
     public double getEqualWeightVolatility() {
         int numTuple =  singleStock.length;
         double arrU[] = new double [numTuple-1];
@@ -48,8 +50,9 @@ public class StockParam {
     public double getEWMAVolatility(){
         double lambda = 0.94;
         int numTuple =  singleStock.length;
-        double arrU[] = new double [numTuple-1];
+
         //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u^2
+        double arrU[] = new double [numTuple-1];
         for (int i = 0; i < (numTuple-1); i++)
             arrU[i] = Math.pow((singleStock[i+1]-singleStock[i])/singleStock[i],2);
         double EWMA = arrU[0];
@@ -57,6 +60,90 @@ public class StockParam {
             EWMA = lambda * EWMA + (1-lambda) * arrU[i+1];
         double sigma = Math.sqrt(EWMA);
         return sigma;
+    }
+*/
+    public double getEqualWeightVolatility() {
+        int numTuple =  xStock.length;
+        //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
+        double ratioU[] = new double [numTuple-1];
+        double ratioV[] = new double [numTuple-1];
+        for (int i = 0; i < (numTuple-1); i++) {
+            ratioU[i] = (xStock[i + 1] - xStock[i]) / xStock[i];
+            ratioV[i] = (yStock[i + 1] - yStock[i]) / yStock[i];
+        }
+        //CALCULATE AVERAGE
+        double sum = 0;
+        for (int i = 0; i < (numTuple-1); i++)
+            sum += ratioU[i]*ratioV[i];
+        double avg = sum/(numTuple-1);
+        double sigma = Math.sqrt(avg);
+        return sigma;
+    }
+
+public double getEWMAVolatility(){
+    double lambda = 0.94;
+    int numTuple =  xStock.length;
+    //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
+    double ratioU[] = new double [numTuple-1];
+    double ratioV[] = new double [numTuple-1];
+    for (int i = 0; i < (numTuple-1); i++) {
+        ratioU[i] = (xStock[i + 1] - xStock[i]) / xStock[i];
+        ratioV[i] = (yStock[i + 1] - yStock[i]) / yStock[i];
+    }
+    int numDiff = ratioU.length;
+    double EWMA = ratioU[numDiff-1]*ratioV[numDiff-1];
+    for (int i = 1; i < numDiff;i++)
+        EWMA = lambda * EWMA + (1-lambda) * ratioU[numDiff-1 - i]*ratioV[numDiff-1 - i];
+    double sigma = Math.sqrt(EWMA);
+    return sigma;
+}
+
+private void LevenbergMarquardt(){
+    /**
+     * Numerical Methods in C
+     * Chapter 15 Modelling of Data
+     */
+    // [0] = alpha [1] = beta [2] = omega
+    double[] unknownParameters = new double[3];
+    double fudgefactor = 0.001;
+
+
+
+    //COMPUTE GRADIENT
+}
+/*
+private void lm(){
+    LeastSquaresProblem problem = new LeastSquaresBuilder().model()
+            .target
+}
+*/
+
+
+
+    public void getGARCH11(){
+        //Generalized Autoregressive Conditional Heteroskedastic Process
+        double lambda = 0.9101;
+        double alpha = 1-lambda;
+        double beta = lambda;
+        double omega = 0.000001347;
+        int numTuple =  xStock.length;
+        //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
+        double ratioU[] = new double [numTuple-1];
+        double ratioV[] = new double [numTuple-1];
+        for (int i = 0; i < (numTuple-1); i++) {
+            ratioU[i] = (xStock[i + 1] - xStock[i]) / xStock[i];
+            ratioV[i] = (yStock[i + 1] - yStock[i]) / yStock[i];
+        }
+        int numDiff = ratioU.length;
+        double variance = ratioU[numDiff-1]*ratioV[numDiff-1];
+        // likelihood = new double[numDiff-1];
+        double likelihood = -Math.log(variance) - (ratioU[numDiff-1]*ratioV[numDiff-1])/variance;
+        for(int i = 1; i < (numTuple-2); i++) {
+            variance = omega + alpha*ratioU[numDiff-1 - i]*ratioV[numDiff-1 - i] + beta*variance;
+            likelihood += Math.log(variance) - (ratioU[numDiff-1]*ratioV[numDiff-1])/variance;
+        }
+        //double sigma = Math.sqrt(GARCH);
+        //return sigma;
     }
 
     public double getMean(){

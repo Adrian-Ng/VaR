@@ -15,7 +15,7 @@ import static org.apache.commons.math3.stat.inference.AlternativeHypothesis.TWO_
  */
 public class BackTest {
 
-    public static int[] testCoverage(int[] violations, double confidenceX, int numMoments){
+    public static int[] testCoverage(double confidenceX, int numMoments){
         //https://www.value-at-risk.net/backtesting-coverage-tests/
         int alpha = numMoments + 1;
         double epsilon = 1 - confidenceX;
@@ -47,7 +47,7 @@ public class BackTest {
         return nonRejectionInterval;
     }
 
-    public static int[] testKupiecPF(int[] violations, double confidenceX, int numMoments){
+    public static int[] testKupiecPF(double confidenceX, int numMoments){
         int[] nonRejectionInterval = new int[2];
         nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.5);
         nonRejectionInterval[1] = (int) (numMoments * (1-confidenceX)*1.5);
@@ -97,7 +97,7 @@ public class BackTest {
         return rejectNullHypothesis;
     }
 
-    public static int[] main(String[] symbol, int[] stockDelta, double[][] optionPrices, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
+    public static int[] main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
         System.out.println("=========================================================================");
@@ -139,8 +139,8 @@ public class BackTest {
                     stockSubsetInterval[j][k - i] = stockPrices[j][k];
             System.setOut(dummyStream);
             momentsVaR[0][i] = Linear.main(symbol, stockSubsetInterval, stockDelta, timeHorizonN, confidenceX);
-            momentsVaR[1][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, optionPrices, optionDelta, timeHorizonN, confidenceX);
-            momentsVaR[2][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, optionPrices, optionDelta, timeHorizonN, confidenceX);
+            momentsVaR[1][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX);
+            momentsVaR[2][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, optionDelta, timeHorizonN, confidenceX);
             System.setOut(originalStream);
         }
         System.out.println("\n\t" + momentsVaR[0].length + " values of VaR calculated.");
@@ -148,16 +148,21 @@ public class BackTest {
          * COUNT NUMBER OF DAYS WHERE LOSSES VIOLATE VaR
          */
         int[] violations = {0, 0, 0};
+        //i and j loops through vectors numMoments and numMeasures respectively
         for (int i = 0; i < numMoments; i++)
-            for (int j = 0; j < numMeasures; j++)
-                if (-momentsVaR[j][i] > deltaP[i])
+            for (int j = 0; j < numMeasures; j++) {
+                double sum = 0.0;
+                for(int k = 0; k < timeHorizonN; k++)
+                    sum += deltaP[i+k];
+                if (-momentsVaR[j][i] >  sum)
                     violations[j]++;
+            }
         //int[] violations = {41, 55, 43};
         System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
         /**
          * STANDARD COVERAGE TEST
          */
-        int[] nonRejectionIntervalStandardCoverage = testCoverage(violations,confidenceX,numMoments);
+        int[] nonRejectionIntervalStandardCoverage = testCoverage(confidenceX,numMoments);
         System.out.println("\n\tNon-Rejection Interval from Standard Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalStandardCoverage));
         for(int i = 0; i < violations.length; i++)
             if(violations[i]<= nonRejectionIntervalStandardCoverage[0]|| violations[i]>= nonRejectionIntervalStandardCoverage[1])
@@ -168,8 +173,8 @@ public class BackTest {
         /**
          * KUPIEC'S PF COVERAGE TEST
          */
-        int[] nonRejectionIntervalKupiecPF = testKupiecPF(violations,confidenceX,numMoments);
-        System.out.println("\n\t\tNon-Rejection Interval from Kupiec's Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
+        int[] nonRejectionIntervalKupiecPF = testKupiecPF(confidenceX,numMoments);
+        System.out.println("\n\tNon-Rejection Interval from Kupiec's Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
         for(int i = 0; i < violations.length; i++)
             if(violations[i]<= nonRejectionIntervalKupiecPF[0]|| violations[i]>= nonRejectionIntervalKupiecPF[1])
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
@@ -177,7 +182,7 @@ public class BackTest {
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
 
         /*** BINOMIAL TEST*/
-        System.out.println("\n\t\tBinomial Test");
+        System.out.println("\n\tBinomial Test");
         double[] pvalue = testBinomial(violations,numMoments,confidenceX);
         boolean[] rejectNull = booleanRejectNull(violations,numMoments,confidenceX);
         System.out.println("\t\tP-Values:\t" + Arrays.toString(pvalue));

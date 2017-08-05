@@ -10,42 +10,49 @@ import java.util.Arrays;
  */
 public class Analytical {
 
-    public static double[] main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
+    public static double[][] main(String[] symbol, double[][] stockPrices, int[] stockDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("Analytical.java");
         System.out.println("=========================================================================");
         NormalDistribution distribution = new NormalDistribution(0, 1);
         double riskPercentile = -distribution.inverseCumulativeProbability(1 - confidenceX);
         int numSym = symbol.length;
-        double[] currentStockPrices = new double[numSym];
-        double[] currentSingleStockValue = new double[numSym];
-        /**
-         * WHAT DOES THE PORTFOLIO LOOK LIKE?
-         */
-        for (int i = 0; i < numSym; i++) {
-            currentStockPrices[i] = stockPrices[i][0];
-            currentSingleStockValue[i] = stockDelta[i] * currentStockPrices[i];
-            System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i] + ". Current Value of Single Stock Portfolio: " + currentSingleStockValue[i]);
-        }
-
-        /**
-         * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
-         */
+        String[] nameVolatilityMeasures = {"Standard Deviation", "Equal Weighted", "EWMA"};
+        double VaR[][] = new double[nameVolatilityMeasures.length][numSym];
+        /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
         double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
 
-        /**
-         * CALCULATE VECTOR OF STANDARD DEVIATIONS
-         */
-        double[] stDevVector = new double[numSym];
-        for (int i = 0; i < numSym; i++)
-            stDevVector[i] = new StockParam(priceChanges[i]).getStandardDeviation();
-        /**
-         * CALCULATE VaR FOR EACH STOCK
-         */
-        double VaR[] = new double[numSym];
-        for (int i = 0; i < numSym; i++){
-            VaR[i] = stDevVector[i] * stockDelta[i] * currentStockPrices[i] * Math.sqrt(timeHorizonN) * riskPercentile;
-            System.out.println("\n\t\tValue At Risk " + symbol[i] + ": " + VaR[i]);
+        /** LOOP THROUGH EACH STOCK*/
+        for (int i = 0; i < numSym; i++) {
+            System.out.println("\t" + symbol[i]);
+            /**PRINT STOCK VARIABLES*/
+            System.out.println("\t\tStock Variables:");
+            System.out.println("\t\t\tDelta:\t\t\t\t"       + stockDelta[i]);
+            System.out.println("\t\t\tCurrent Price:\t\t"   + stockPrices[i][0]);
+            System.out.println("\t\t\tValue:\t\t\t\t"       + stockDelta[i]*stockPrices[i][0]);
+
+            /** CALCULATE VOLATILITIES*/
+            double volatilityStDev = new StockParam(priceChanges[i]).getStandardDeviation();
+            double volatilityEqualWeighted = new StockParam(stockPrices[i],stockPrices[i]).getEqualWeightVolatility();
+            double volatilityEWMA = new StockParam(stockPrices[i],stockPrices[i]).getEWMAVolatility();
+
+            /** PRINT VOLATILITIES*/
+            System.out.println("\n\t\tVolatilities:");
+            System.out.println("\t\t\tStandard Deviation: " + volatilityStDev);
+            System.out.println("\t\t\tEqual Weighted:\t\t"  + volatilityEqualWeighted);
+            System.out.println("\t\t\tEWMA:\t\t\t\t"        + volatilityEWMA);
+
+            /** CALCULATE VAR FOR EACH VOLATILITY MEASURE*/
+            VaR[0][i] = volatilityStDev * stockDelta[i] * stockPrices[i][0] * Math.sqrt(timeHorizonN) * riskPercentile;
+            VaR[1][i] = volatilityEqualWeighted * stockDelta[i] * stockPrices[i][0] * Math.sqrt(timeHorizonN) * riskPercentile;
+            VaR[2][i] = volatilityEWMA * stockDelta[i] * stockPrices[i][0] * Math.sqrt(timeHorizonN) * riskPercentile;
+
+            /** PRINT VAR*/
+            System.out.println("\n\t\tValue At Risk:");
+            System.out.println("\t\t\tStandard Deviation: " + VaR[0][i]);
+            System.out.println("\t\t\tEqual Weighted:\t\t"  + VaR[1][i]);
+            System.out.println("\t\t\tEWMA:\t\t\t\t"        + VaR[2][i]);
+            System.out.println("\t-----------------------------------------------");
         }
         return VaR;
     }
