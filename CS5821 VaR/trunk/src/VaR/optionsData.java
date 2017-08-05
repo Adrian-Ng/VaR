@@ -82,7 +82,8 @@ public class optionsData {
 
 
     public double getEuropeanPut (double stockPrice) {
-        double X = this.strikePrices[0];
+        int numPuts = putPrices.length;
+        double X = this.strikePrices[numPuts-1];
         int T = (int) this.daystoMaturity;
         double u = Math.exp(volatility*Math.sqrt(dt));           // stock price increase
         double d = Math.exp(-volatility*Math.sqrt(dt));          // stock price decrease
