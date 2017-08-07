@@ -98,35 +98,81 @@ public double getEWMAVolatility(){
     return sigma;
 }
 
-private void LevenbergMarquardt(){
-    /**
-     * Numerical Methods in C
-     * Chapter 15 Modelling of Data
-     */
-    // [0] = alpha [1] = beta [2] = omega
-    double[] unknownParameters = new double[3];
-    double fudgefactor = 0.001;
+private double likelihood;
+private double[] derivatives = new double[3]; //derivatives as in partial differentiation. Not to be confused with the financial instrument!
+private double[] LevenBergMarquardt(double[] ratioU, double[] ratioV){
+/**
+ * Numerical Recipes in C page 684
+ * Given an initial guess for the set of fitted parameters a, the recommended Marquardt recipe is as follows:
+ • Compute χ2(a) (= likelihood).
+ • Pick a modest value for λ, say λ = 0.001.
+ • (†) Solve the linear equations (15.5.14) for δa and evaluate χ2(a + δa).
+ • If χ2(a + δa) ≥χ2(a), increase λ by a factor of 10 (or any other substantial factor) and go back to (†).
+ • If χ2(a + δa) < χ2(a), decrease λ by a factor of 10, update the trial solution a ← a + δa, and go back to (†)
+ */
+
+    double lambda = 0.9101;
+    double alpha = 1-lambda;
+    double beta = lambda;
+    double omega = 0.000001347;
+    double[] parameters = new double[3];
+    parameters[0] = omega;
+    parameters[1] = alpha;
+    parameters[2] = beta;
+
+
+    likelihood(ratioU,ratioV,parameters);
+    double[][] Hessian = getHessianMatrix();
+    double λ = 0.001;
 
 
 
-    //COMPUTE GRADIENT
+
+    return parameters;}
+
+private void likelihood(double[] ratioU, double[] ratioV, double parameters[]){
+    double omega    = parameters[0];
+    double alpha    = parameters[1]; //not to be confused with the alpha matrix in LevenbergMarquardt
+    double beta     = parameters[2]; //not to be confused with the beta vector in LevenbergMarquardt
+
+    int numTuple1 = ratioU.length;
+    //calculate initial variance
+    double variance = ratioU[numTuple1-1]*ratioV[numTuple1-1];
+    //calculate initial likelihood
+    likelihood = -Math.log(variance) - (ratioU[numTuple1-1]*ratioV[numTuple1-1])/variance;
+    //initialize derivatives of likelihood
+    double dOmega = 0.0;
+    double dAlpha = 0.0;
+    double dBeta = 0.0;
+    for(int i = 1; i < (numTuple1-1); i++) {
+        double uSquared = ratioU[numTuple1-1 - i]*ratioV[numTuple1-1 - i];
+        double newVariance = omega + alpha*uSquared + beta*variance;
+        likelihood += Math.log(newVariance) - (uSquared)/newVariance;
+        //calculate derivatives
+        dOmega  += -(1/newVariance) + (uSquared)/Math.pow(newVariance,2);
+        dAlpha  += -(Math.pow(uSquared,2)/newVariance) + (Math.pow(uSquared,2)/Math.pow(newVariance,2));
+        dBeta   += -(variance/newVariance) + (uSquared*variance)/(Math.pow(newVariance,2));
+        variance = newVariance;
+    }
+    derivatives[0] = dOmega;
+    derivatives[1] = dAlpha;
+    derivatives[2] = dBeta;
 }
-/*
-private void lm(){
-    LeastSquaresProblem problem = new LeastSquaresBuilder().model()
-            .target
-}
-*/
 
+private double[][] getHessianMatrix(){
+    double[][] Hessian = new double[derivatives.length][derivatives.length];
+    for(int i = 0; i < derivatives.length; i ++)
+        for(int j = 0; j < derivatives.length; j++)
+            Hessian[i][i] = derivatives[i]*derivatives[j];
+    return Hessian;
+}
 
 
     public void getGARCH11(){
         //Generalized Autoregressive Conditional Heteroskedastic Process
-        double lambda = 0.9101;
-        double alpha = 1-lambda;
-        double beta = lambda;
-        double omega = 0.000001347;
         int numTuple =  xStock.length;
+
+
         //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
         double ratioU[] = new double [numTuple-1];
         double ratioV[] = new double [numTuple-1];
@@ -134,14 +180,9 @@ private void lm(){
             ratioU[i] = (xStock[i + 1] - xStock[i]) / xStock[i];
             ratioV[i] = (yStock[i + 1] - yStock[i]) / yStock[i];
         }
-        int numDiff = ratioU.length;
-        double variance = ratioU[numDiff-1]*ratioV[numDiff-1];
-        // likelihood = new double[numDiff-1];
-        double likelihood = -Math.log(variance) - (ratioU[numDiff-1]*ratioV[numDiff-1])/variance;
-        for(int i = 1; i < (numTuple-2); i++) {
-            variance = omega + alpha*ratioU[numDiff-1 - i]*ratioV[numDiff-1 - i] + beta*variance;
-            likelihood += Math.log(variance) - (ratioU[numDiff-1]*ratioV[numDiff-1])/variance;
-        }
+        //OPTIMISE PARAMETERS VIA LevenbergMarquardt algorithm
+        double parameters[] = LevenBergMarquardt(ratioU,ratioV);
+
         //double sigma = Math.sqrt(GARCH);
         //return sigma;
     }
