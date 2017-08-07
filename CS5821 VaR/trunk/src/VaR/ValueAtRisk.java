@@ -53,10 +53,10 @@ public class ValueAtRisk {
         PortfolioInfo.print(Symbol, stockPrices,stockDelta,options,optionDelta);
 
         // Get VaR Measures
-        //double[][] analyticalVaR = Analytical.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        double[][] analyticalVaR = Analytical.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
         //double linearVaR = Linear.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
         //double montecarloVaR = MonteCarlo.main(Symbol, stockPrices,stockDelta, optionDelta, timeHorizonN, confidenceX);
-        double historicVaR = Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
+        //double historicVaR = Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
         //int[] violations = BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
     }
 }

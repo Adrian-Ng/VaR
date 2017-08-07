@@ -35,13 +35,13 @@ public class Analytical {
             double volatilityStDev = new StockParam(priceChanges[i]).getStandardDeviation();
             double volatilityEqualWeighted = new StockParam(stockPrices[i],stockPrices[i]).getEqualWeightVolatility();
             double volatilityEWMA = new StockParam(stockPrices[i],stockPrices[i]).getEWMAVolatility();
-
+            double volatilityGARCH11 = new StockParam(stockPrices[i],stockPrices[i]).getGARCH11();
             /** PRINT VOLATILITIES*/
             System.out.println("\n\t\tVolatilities:");
             System.out.println("\t\t\tStandard Deviation: " + volatilityStDev);
             System.out.println("\t\t\tEqual Weighted:\t\t"  + volatilityEqualWeighted);
             System.out.println("\t\t\tEWMA:\t\t\t\t"        + volatilityEWMA);
-
+            System.out.println("\t\t\tGARCH(1,1):\t\t\t"    + volatilityGARCH11);
             /** CALCULATE VAR FOR EACH VOLATILITY MEASURE*/
             VaR[0][i] = volatilityStDev * stockDelta[i] * stockPrices[i][0] * Math.sqrt(timeHorizonN) * riskPercentile;
             VaR[1][i] = volatilityEqualWeighted * stockDelta[i] * stockPrices[i][0] * Math.sqrt(timeHorizonN) * riskPercentile;

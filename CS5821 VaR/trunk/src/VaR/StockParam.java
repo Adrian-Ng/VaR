@@ -4,6 +4,8 @@ import org.apache.commons.math3.fitting.*;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
 
+import java.util.Arrays;
+
 /**
  * Created by Adrian on 08/07/2017.
  */
@@ -98,7 +100,7 @@ public double getEWMAVolatility(){
     return sigma;
 }
 
-private double likelihood;
+
 private double[] derivatives = new double[3]; //derivatives as in partial differentiation. Not to be confused with the financial instrument!
 private double[] LevenBergMarquardt(double[] ratioU, double[] ratioV){
 /**
@@ -111,26 +113,50 @@ private double[] LevenBergMarquardt(double[] ratioU, double[] ratioV){
  • If χ2(a + δa) < χ2(a), decrease λ by a factor of 10, update the trial solution a ← a + δa, and go back to (†)
  */
 
-    double lambda = 0.9101;
-    double alpha = 1-lambda;
-    double beta = lambda;
-    double omega = 0.000001347;
+    double lambda = 0.4;
+    double alpha = 0.45;
+    double beta = 0.45;
+    double omega = 0.0002;
     double[] parameters = new double[3];
     parameters[0] = omega;
     parameters[1] = alpha;
     parameters[2] = beta;
+    double likelihood = likelihood(ratioU,ratioV,parameters);
+    int epoch = 0;
+    while(epoch < 10000) {
+        //System.out.println("\t\t\t\tepoch: " + epoch);
+        double[] vectorBeta = {-1 * derivatives[0], -1 * derivatives[1], -1 * derivatives[2]};
+        double λ = 0.001; //non-dimensional fudge facor
+        double[][] Hessian = getHessianMatrix(λ);
+        //calculate deltaParameters
+        double[] deltaParameters = new double[parameters.length];
+        for (int i = 0; i < parameters.length; i++) {
+            double sum = 0.0;
+            for (int j = 0; j < Hessian.length; j++)
+                sum += Hessian[i][j];
+            deltaParameters[i] = vectorBeta[i] / sum;
+        }
+        //evaluate χ2(a + δa)
+        double[] trialParameters = new double[parameters.length];
+        for (int i = 0; i < parameters.length; i++)
+            trialParameters[i] = parameters[i] + deltaParameters[i];
+        double newLikelihood = likelihood(ratioU, ratioV, parameters);
+        if (newLikelihood >= likelihood) {
+            parameters = trialParameters;
+            λ = λ / 10;
+        }
+        else
+            λ = λ * 10;
+        likelihood = newLikelihood;
+        epoch++;
+        System.out.println(Arrays.toString(parameters));
+        if(parameters[1]+parameters[2] >= 1)
+            break;
+    }
+    return parameters;
+}
 
-
-    likelihood(ratioU,ratioV,parameters);
-    double[][] Hessian = getHessianMatrix();
-    double λ = 0.001;
-
-
-
-
-    return parameters;}
-
-private void likelihood(double[] ratioU, double[] ratioV, double parameters[]){
+private double likelihood(double[] ratioU, double[] ratioV, double parameters[]){
     double omega    = parameters[0];
     double alpha    = parameters[1]; //not to be confused with the alpha matrix in LevenbergMarquardt
     double beta     = parameters[2]; //not to be confused with the beta vector in LevenbergMarquardt
@@ -139,7 +165,7 @@ private void likelihood(double[] ratioU, double[] ratioV, double parameters[]){
     //calculate initial variance
     double variance = ratioU[numTuple1-1]*ratioV[numTuple1-1];
     //calculate initial likelihood
-    likelihood = -Math.log(variance) - (ratioU[numTuple1-1]*ratioV[numTuple1-1])/variance;
+    double likelihood = -Math.log(variance) - (ratioU[numTuple1-1]*ratioV[numTuple1-1])/variance;
     //initialize derivatives of likelihood
     double dOmega = 0.0;
     double dAlpha = 0.0;
@@ -157,22 +183,25 @@ private void likelihood(double[] ratioU, double[] ratioV, double parameters[]){
     derivatives[0] = dOmega;
     derivatives[1] = dAlpha;
     derivatives[2] = dBeta;
+    return likelihood;
 }
 
-private double[][] getHessianMatrix(){
+private double[][] getHessianMatrix(double λ){
     double[][] Hessian = new double[derivatives.length][derivatives.length];
     for(int i = 0; i < derivatives.length; i ++)
-        for(int j = 0; j < derivatives.length; j++)
-            Hessian[i][i] = derivatives[i]*derivatives[j];
+        for(int j = 0; j < derivatives.length; j++) {
+            if (i==j)
+                Hessian[i][j] = derivatives[i] * derivatives[j] * (1+λ);
+            else
+                Hessian[i][j] = derivatives[i] * derivatives[j];
+        }
     return Hessian;
 }
 
 
-    public void getGARCH11(){
+    public double getGARCH11(){
         //Generalized Autoregressive Conditional Heteroskedastic Process
         int numTuple =  xStock.length;
-
-
         //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
         double ratioU[] = new double [numTuple-1];
         double ratioV[] = new double [numTuple-1];
@@ -182,9 +211,20 @@ private double[][] getHessianMatrix(){
         }
         //OPTIMISE PARAMETERS VIA LevenbergMarquardt algorithm
         double parameters[] = LevenBergMarquardt(ratioU,ratioV);
-
-        //double sigma = Math.sqrt(GARCH);
-        //return sigma;
+        System.out.println(Arrays.toString(parameters));
+        double omega = parameters[0];
+        double alpha = parameters[1];
+        double beta = parameters[2];
+        /*double GARCH = ratioU[numTuple-2]*ratioV[numTuple-2];
+        for(int i = 1; i < (numTuple-2); i++) {
+            double uSquared = ratioU[numTuple - 2 - i] * ratioV[numTuple - 2 - i];
+            GARCH = omega + alpha * uSquared + beta * GARCH;
+        }
+        double sigma = Math.sqrt(GARCH);
+        return sigma;*/
+        //calculate long term variance
+        double sigma = omega/(1-alpha-beta);
+        return Math.sqrt(sigma);
     }
 
     public double getMean(){
