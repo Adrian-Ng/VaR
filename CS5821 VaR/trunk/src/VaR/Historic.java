@@ -18,31 +18,24 @@ public class Historic {
         double[] currentStockPrices = new double[numSym];
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
-
         long[] daystoMaturity = new long[numSym];
+        double currentValue = 0;
         for (int i = 0; i < numSym; i++) {
+            currentStockPrices[i] = stockPrices[i][0];
             strikePrices[i] = options[i].getStrikePrices();
             daystoMaturity[i] = options[i].getDaystoMaturity();
             currentPutPrices[i] = options[i].getPutPrices();
+            int numPuts = currentPutPrices[i].length;
+            currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
         }
-
+/*
         for(int i = 0; i < numSym; i++){
             System.out.println(strikePrices[i].length);
             System.out.println(currentPutPrices[i].length);
+            for(int j = 0; j < currentPutPrices[i].length; j++)
+                System.out.println(currentPutPrices[i][j]);
         }
-
-        /**
-         * WHAT DOES THE PORTFOLIO LOOK LIKE?
-         */
-        for (int i = 0; i < numSym; i++) {
-            currentStockPrices[i] = stockPrices[i][0];
-            //System.out.println("\t\t" + stockDelta[i] + " stocks in " + stockSymbol[i] + ". Current price is: " + currentStockPrices[i]);
-        }
-        double currentValue = 0;
-        for (int i = 0; i < numSym; i++) {
-            currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][0];
-        }
-        //System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
+*/
 
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
@@ -61,7 +54,7 @@ public class Historic {
         double[][] tomorrowPutPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
             for(int  j = 0; j < numTuple; j++) {
-                tomorrowPutPrices[i][j] = options[i].getEuropeanPut(tomorrowStockPrices[i][j]);
+                tomorrowPutPrices[i][j] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j]);
                 //System.out.println(tomorrowPutPrices[i][j]);
             }
         /**
@@ -71,12 +64,10 @@ public class Historic {
         for(int i = 0; i < numTuple;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += tomorrowStockPrices[j][i] * stockDelta[j] + tomorrowPutPrices[j][i] * optionDelta[j];
+                sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]);
             deltaP[i] = sum;
         }
-        /**
-         * GET VaR FROM xTH DELTAP
-         */
+        /** GET VaR FROM xTH DELTAP */
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
         double VaR = (currentValue - deltaP[(int) index]) * Math.sqrt(timeHorizonN);
