@@ -1,10 +1,10 @@
 package VaR;
 
-import org.apache.commons.math3.fitting.*;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresBuilder;
-import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
+
+import org.apache.commons.math3.linear.*;
 
 import java.util.Arrays;
+
 
 /**
  * Created by Adrian on 08/07/2017.
@@ -12,8 +12,6 @@ import java.util.Arrays;
 public class StockParam {
     //instance variable
     private double[] singleStock;
-
-
     private double[] xStock;
     private double[] yStock;
 
@@ -33,37 +31,7 @@ public class StockParam {
     {
         this.multiStock = multiStock;
     }
-/*
-    public double getEqualWeightVolatility() {
-        int numTuple =  singleStock.length;
-        double arrU[] = new double [numTuple-1];
-        //GENERATE ARRAY OF PRICE DIFFERENCES
-        for (int i = 0; i < (numTuple-1); i++)
-            arrU[i] = Math.pow((singleStock[i+1]-singleStock[i])/singleStock[i],2);
-        //CALCULATE AVERAGE
-        double sum = 0;
-        for (int i = 0; i < (numTuple-1); i++)
-            sum += arrU[i];
-        double avg = sum/(numTuple-1);
-        double sigma = Math.sqrt(avg);
-        return sigma;
-    }
 
-    public double getEWMAVolatility(){
-        double lambda = 0.94;
-        int numTuple =  singleStock.length;
-
-        //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u^2
-        double arrU[] = new double [numTuple-1];
-        for (int i = 0; i < (numTuple-1); i++)
-            arrU[i] = Math.pow((singleStock[i+1]-singleStock[i])/singleStock[i],2);
-        double EWMA = arrU[0];
-        for (int i = 1; i < (numTuple-2);i++)
-            EWMA = lambda * EWMA + (1-lambda) * arrU[i+1];
-        double sigma = Math.sqrt(EWMA);
-        return sigma;
-    }
-*/
     public double getEqualWeightVolatility() {
         int numTuple =  xStock.length;
         //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
@@ -100,9 +68,9 @@ public double getEWMAVolatility(){
     return sigma;
 }
 
-
-private double[] derivatives = new double[3]; //derivatives as in partial differentiation. Not to be confused with the financial instrument!
-private double[] LevenBergMarquardt(double[] ratioU, double[] ratioV){
+private double[][] curvatureMatrix;
+private double[] vectorBeta = new double[3]; //derivatives as in partial differentiation. Not to be confused with the financial instrument!
+private double[] LevenBergMarquardt(double[] uSquaredArray){
 /**
  * Numerical Recipes in C page 684
  * Given an initial guess for the set of fitted parameters a, the recommended Marquardt recipe is as follows:
@@ -112,118 +80,125 @@ private double[] LevenBergMarquardt(double[] ratioU, double[] ratioV){
  • If χ2(a + δa) ≥χ2(a), increase λ by a factor of 10 (or any other substantial factor) and go back to (†).
  • If χ2(a + δa) < χ2(a), decrease λ by a factor of 10, update the trial solution a ← a + δa, and go back to (†)
  */
-
-    double lambda = 0.4;
-    double alpha = 0.45;
-    double beta = 0.45;
-    double omega = 0.0002;
+    double λ = 0.001; //non-dimensional fudge factor
     double[] parameters = new double[3];
-    parameters[0] = omega;
-    parameters[1] = alpha;
-    parameters[2] = beta;
-    double likelihood = likelihood(ratioU,ratioV,parameters);
+    parameters[0] = Math.random()*0.000001; //omega
+    parameters[1] = Math.random()*0.1; //alpha
+    parameters[2] = Math.random()*0.9; //beta
+    System.out.println(Arrays.toString(parameters));
+    double likelihood = likelihood(uSquaredArray,parameters, λ);
     int epoch = 0;
     while(epoch < 10000) {
-        //System.out.println("\t\t\t\tepoch: " + epoch);
-        double[] vectorBeta = {-1 * derivatives[0], -1 * derivatives[1], -1 * derivatives[2]};
-        double λ = 0.001; //non-dimensional fudge facor
-        double[][] Hessian = getHessianMatrix(λ);
-        //calculate deltaParameters
+
+        double[] vectorBeta = this.vectorBeta;
+
+        //solve simultaneous equations to calculate deltaParameters
+        RealMatrix coefficients = new Array2DRowRealMatrix(curvatureMatrix);
+        DecompositionSolver solver = new LUDecomposition(coefficients).getSolver();
+        RealVector constants = new ArrayRealVector(vectorBeta);
+        RealVector solution = solver.solve(constants);
         double[] deltaParameters = new double[parameters.length];
-        for (int i = 0; i < parameters.length; i++) {
-            double sum = 0.0;
-            for (int j = 0; j < Hessian.length; j++)
-                sum += Hessian[i][j];
-            deltaParameters[i] = vectorBeta[i] / sum;
-        }
+        for(int i = 0; i < deltaParameters.length; i++)
+            deltaParameters[i] = solution.getEntry(i);
+        //System.out.println(Arrays.toString(deltaParameters));
         //evaluate χ2(a + δa)
         double[] trialParameters = new double[parameters.length];
         for (int i = 0; i < parameters.length; i++)
             trialParameters[i] = parameters[i] + deltaParameters[i];
-        double newLikelihood = likelihood(ratioU, ratioV, parameters);
-        if (newLikelihood >= likelihood) {
+        double trialLikelihood = likelihood(uSquaredArray, trialParameters, λ);
+        //System.out.println(trialLikelihood);
+        if (trialLikelihood > likelihood) {
             parameters = trialParameters;
-            λ = λ / 10;
+            λ *= 0.0010; //if successful, use a smaller fudge factor
+            likelihood = trialLikelihood;
         }
-        else
-            λ = λ * 10;
-        likelihood = newLikelihood;
+        /*else if ( trialLikelihood < 0)
+            λ *= 10; //if unsuccessful, use a larger fudge factor*/
+        else {
+            λ *= 1.1; //if unsuccessful, use a larger fudge factor
+            //likelihood = likelihood(uSquaredArray, parameters, λ);
+        }
         epoch++;
-        System.out.println(Arrays.toString(parameters));
-        if(parameters[1]+parameters[2] >= 1)
-            break;
+        //System.out.println(likelihood);
+        //System.out.println(Arrays.toString(trialParameters));
+        /*if(parameters[1]+parameters[2] >= 1)
+            break;*/
     }
+    System.out.println(likelihood);
     return parameters;
 }
 
-private double likelihood(double[] ratioU, double[] ratioV, double parameters[]){
+private double likelihood(double[] uSquaredArray, double parameters[], double λ){
     double omega    = parameters[0];
     double alpha    = parameters[1]; //not to be confused with the alpha matrix in LevenbergMarquardt
     double beta     = parameters[2]; //not to be confused with the beta vector in LevenbergMarquardt
+    int numTuple = uSquaredArray.length;
 
-    int numTuple1 = ratioU.length;
-    //calculate initial variance
-    double variance = ratioU[numTuple1-1]*ratioV[numTuple1-1];
-    //calculate initial likelihood
-    double likelihood = -Math.log(variance) - (ratioU[numTuple1-1]*ratioV[numTuple1-1])/variance;
     //initialize derivatives of likelihood
-    double dOmega = 0.0;
-    double dAlpha = 0.0;
-    double dBeta = 0.0;
-    for(int i = 1; i < (numTuple1-1); i++) {
-        double uSquared = ratioU[numTuple1-1 - i]*ratioV[numTuple1-1 - i];
+    double dOmega       = 0.0;
+    double dAlpha       = 0.0;
+    double dBeta        = 0.0;
+
+    double dOmegadOmega = 0.0;
+    double dAlphadAlpha = 0.0;
+    double dBetadBeta   = 0.0;
+
+    double dOmegadAlpha = 0.0;
+    double dOmegadBeta  = 0.0;
+    double dAlphadBeta  = 0.0;
+
+    //calculate initial variance
+    double variance = uSquaredArray[numTuple-1];
+    //calculate initial likelihood
+    double likelihood = -Math.log(variance) - 1;
+    for(int i = 0; i < (numTuple-1); i++) {
+        double uSquared = uSquaredArray[numTuple-1 - i];
         double newVariance = omega + alpha*uSquared + beta*variance;
-        likelihood += Math.log(newVariance) - (uSquared)/newVariance;
+        likelihood += -Math.log(newVariance) - (uSquared)/newVariance;
         //calculate derivatives
-        dOmega  += -(1/newVariance) + (uSquared)/Math.pow(newVariance,2);
-        dAlpha  += -(Math.pow(uSquared,2)/newVariance) + (Math.pow(uSquared,2)/Math.pow(newVariance,2));
-        dBeta   += -(variance/newVariance) + (uSquared*variance)/(Math.pow(newVariance,2));
+        dOmega          += -1*(1/newVariance)                              + (uSquared/Math.pow(newVariance,2));
+        dAlpha          += -1*(uSquared/newVariance)                       + (Math.pow(uSquared,2)/Math.pow(newVariance,2));
+        dBeta           += -1*(variance/newVariance)                       + ((uSquared*variance)/Math.pow(newVariance,2));
+
+        dOmegadOmega    += (1/Math.pow(newVariance,2))                     - ((2 * uSquared)/Math.pow(newVariance,3));
+        dAlphadAlpha    += (Math.pow(uSquared,2)/Math.pow(newVariance,2))  - ((2 * Math.pow(uSquared,3))/Math.pow(newVariance,3));
+        dBetadBeta      += (Math.pow(variance,2)/Math.pow(newVariance,2))  - ((2 * uSquared * Math.pow(variance,2))/Math.pow(newVariance,3));
+
+        dOmegadAlpha    += (uSquared/Math.pow(newVariance,2))              - ((2 * Math.pow(uSquared,2))/Math.pow(newVariance,3));
+        dOmegadBeta     += (variance/Math.pow(newVariance,2))              - ((2 * uSquared*variance)/Math.pow(newVariance,3));
+        dAlphadBeta     += ((uSquared*variance)/Math.pow(newVariance,2))   - ((2 * Math.pow(uSquared,2) * variance)/Math.pow(newVariance,3));
+
         variance = newVariance;
     }
-    derivatives[0] = dOmega;
-    derivatives[1] = dAlpha;
-    derivatives[2] = dBeta;
+    double[] vectorBeta = {-1*dOmega, -1*dAlpha, -1*dBeta};
+    this.vectorBeta = vectorBeta;
+    //populate curvature matrix
+    double[][] curvatureMatrix =    {   {dOmegadOmega*(1+λ) , dOmegadAlpha      , dOmegadBeta}
+                                    ,   {dOmegadAlpha       , dAlphadAlpha*(1+λ), dAlphadBeta}
+                                    ,   {dOmegadBeta        , dAlphadBeta       , dBetadBeta*(1+λ)}};
+    this.curvatureMatrix = curvatureMatrix;
     return likelihood;
 }
-
-private double[][] getHessianMatrix(double λ){
-    double[][] Hessian = new double[derivatives.length][derivatives.length];
-    for(int i = 0; i < derivatives.length; i ++)
-        for(int j = 0; j < derivatives.length; j++) {
-            if (i==j)
-                Hessian[i][j] = derivatives[i] * derivatives[j] * (1+λ);
-            else
-                Hessian[i][j] = derivatives[i] * derivatives[j];
-        }
-    return Hessian;
-}
-
 
     public double getGARCH11(){
         //Generalized Autoregressive Conditional Heteroskedastic Process
         int numTuple =  xStock.length;
-        //GENERATE ARRAY OF PRICE DIFFERENCES AND CALCULATE RATIO u and v
-        double ratioU[] = new double [numTuple-1];
-        double ratioV[] = new double [numTuple-1];
+        //uSquaredArray = array of returns
+        double uSquaredArray[] = new double [numTuple-1];
         for (int i = 0; i < (numTuple-1); i++) {
-            ratioU[i] = (xStock[i + 1] - xStock[i]) / xStock[i];
-            ratioV[i] = (yStock[i + 1] - yStock[i]) / yStock[i];
+            double ratioU = (xStock[i + 1] - xStock[i]) / xStock[i];
+            double ratioV = (yStock[i + 1] - yStock[i]) / yStock[i];
+            uSquaredArray[i] = ratioU*ratioV;
         }
         //OPTIMISE PARAMETERS VIA LevenbergMarquardt algorithm
-        double parameters[] = LevenBergMarquardt(ratioU,ratioV);
+        double parameters[] = LevenBergMarquardt(uSquaredArray);
         System.out.println(Arrays.toString(parameters));
         double omega = parameters[0];
         double alpha = parameters[1];
         double beta = parameters[2];
-        /*double GARCH = ratioU[numTuple-2]*ratioV[numTuple-2];
-        for(int i = 1; i < (numTuple-2); i++) {
-            double uSquared = ratioU[numTuple - 2 - i] * ratioV[numTuple - 2 - i];
-            GARCH = omega + alpha * uSquared + beta * GARCH;
-        }
-        double sigma = Math.sqrt(GARCH);
-        return sigma;*/
         //calculate long term variance
         double sigma = omega/(1-alpha-beta);
+        //return long term volatility
         return Math.sqrt(sigma);
     }
 
