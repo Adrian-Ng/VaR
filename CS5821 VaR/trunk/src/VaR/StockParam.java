@@ -3,8 +3,9 @@ package VaR;
 
 import org.apache.commons.math3.linear.*;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
-
+import java.util.Random;
 
 /**
  * Created by Adrian on 08/07/2017.
@@ -80,9 +81,10 @@ private double[] LevenBergMarquardt(double[] uSquaredArray){
  • If χ2(a + δa) ≥χ2(a), increase λ by a factor of 10 (or any other substantial factor) and go back to (†).
  • If χ2(a + δa) < χ2(a), decrease λ by a factor of 10, update the trial solution a ← a + δa, and go back to (†)
  */
-    double λ = 0.001; //non-dimensional fudge factor
-    double[] parameters = new double[3];
-    parameters[0] = Math.random()*0.000001; //omega
+    double λ = 0.00001; //non-dimensional fudge factor
+    //double[] parameters = new double[3];
+    BigDecimal[] parameters = new BigDecimal[3];
+    parameters[0] = Math.random()*0.0003; //omega
     parameters[1] = Math.random()*0.1; //alpha
     parameters[2] = Math.random()*0.9; //beta
     System.out.println(Arrays.toString(parameters));
@@ -107,22 +109,25 @@ private double[] LevenBergMarquardt(double[] uSquaredArray){
             trialParameters[i] = parameters[i] + deltaParameters[i];
         double trialLikelihood = likelihood(uSquaredArray, trialParameters, λ);
         //System.out.println(trialLikelihood);
-        if (trialLikelihood > likelihood) {
+        if (trialParameters[0] < 0.0 || trialParameters[1] < 0.0 || trialParameters[1] > 1.0 || trialParameters[2] < 0.0 || trialParameters[2] > (1-trialParameters[1])|| trialParameters[1] + trialParameters[2] > 1)
+
+            λ *= 0.1; //use a larger fudge factor
+        else if (trialLikelihood > likelihood) {
             parameters = trialParameters;
-            λ *= 0.0010; //if successful, use a smaller fudge factor
+            λ *= 10; //if successful, use a smaller fudge factor
             likelihood = trialLikelihood;
         }
         /*else if ( trialLikelihood < 0)
             λ *= 10; //if unsuccessful, use a larger fudge factor*/
         else {
-            λ *= 1.1; //if unsuccessful, use a larger fudge factor
+            λ *= 0.1; //if unsuccessful, use a larger fudge factor
             //likelihood = likelihood(uSquaredArray, parameters, λ);
         }
         epoch++;
         //System.out.println(likelihood);
         //System.out.println(Arrays.toString(trialParameters));
-        /*if(parameters[1]+parameters[2] >= 1)
-            break;*/
+        if(parameters[1]+parameters[2] >= 1.0)
+            break;
     }
     System.out.println(likelihood);
     return parameters;
@@ -173,9 +178,9 @@ private double likelihood(double[] uSquaredArray, double parameters[], double λ
     double[] vectorBeta = {-1*dOmega, -1*dAlpha, -1*dBeta};
     this.vectorBeta = vectorBeta;
     //populate curvature matrix
-    double[][] curvatureMatrix =    {   {dOmegadOmega*(1+λ) , dOmegadAlpha      , dOmegadBeta}
-                                    ,   {dOmegadAlpha       , dAlphadAlpha*(1+λ), dAlphadBeta}
-                                    ,   {dOmegadBeta        , dAlphadBeta       , dBetadBeta*(1+λ)}};
+    double[][] curvatureMatrix =    {   {0.5*dOmegadOmega*(1+λ) , 0.5*dOmegadAlpha      , 0.5*dOmegadBeta}
+                                    ,   {0.5*dOmegadAlpha       , 0.5*dAlphadAlpha*(1+λ), 0.5*dAlphadBeta}
+                                    ,   {0.5*dOmegadBeta        , 0.5*dAlphadBeta       , 0.5*dBetadBeta*(1+λ)}};
     this.curvatureMatrix = curvatureMatrix;
     return likelihood;
 }
