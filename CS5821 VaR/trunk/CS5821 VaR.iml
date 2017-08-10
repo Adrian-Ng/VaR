@@ -13,5 +13,6 @@
     <orderEntry type="library" name="org.json:json:20170516" level="project" />
     <orderEntry type="library" name="com.google.code.gson:gson:2.8.1" level="project" />
     <orderEntry type="library" name="net.finmath:finmath-lib:3.0.6" level="project" />
+    <orderEntry type="library" name="org.nd4j:canova-nd4j-common:0.0.0.17" level="project" />
   </component>
 </module>
