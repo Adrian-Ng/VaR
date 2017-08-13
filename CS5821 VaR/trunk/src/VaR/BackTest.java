@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
-import org.apache.commons.math3.stat.inference.*;
 import org.apache.commons.math3.distribution.*;
-import static org.apache.commons.math3.stat.inference.AlternativeHypothesis.TWO_SIDED;
+
 
 /**back test needs to calculate 1000 values of VaR at staggered intervals of data.
  * Each measure will consume 252 days of data. That is one year.
@@ -83,20 +82,6 @@ public class BackTest {
         return nonRejectionInterval;
     }
 
-    public static double[] testBinomial(int[] violations, int numMoments, double confidenceX){
-        double[] pvalue = new double[violations.length];
-        for (int i = 0; i < violations.length; i++)
-             pvalue[i] = new BinomialTest().binomialTest(numMoments,numMoments-violations[i],confidenceX, TWO_SIDED);
-        return pvalue;
-    }
-
-    public static boolean[] booleanRejectNull(int[] violations, int numMoments, double confidenceX){
-        boolean[] rejectNullHypothesis = new boolean[violations.length];
-        for (int i = 0; i < violations.length; i++)
-            rejectNullHypothesis[i] = new BinomialTest().binomialTest(numMoments,numMoments-violations[i],confidenceX, TWO_SIDED, 1-confidenceX);
-        return rejectNullHypothesis;
-    }
-
     public static int[] main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
@@ -110,8 +95,8 @@ public class BackTest {
         });
         int numSym = symbol.length;
 
-        String[] nameMeasures = {"Linear","Historic", "Monte Carlo"};
-        int numMeasures = nameMeasures.length;            //Linear + Historic +  Monte Carlo= 3
+        String[] nameMeasures = {"Analytical StDev", "Analytical EWMA", "Analytical GARCH(1,1)","Historic", "Monte Carlo"};
+        int numMeasures = nameMeasures.length;            //AnalyticalLinear + Historic +  Monte Carlo= 3
         int numYears = 5;              //Get Five Years of Data for BackTest
         int numMoments = 1000;          //Number of VaRs to Calculate
         int intervals = 252;            //Number of Working Days in One Year
@@ -129,6 +114,10 @@ public class BackTest {
                 sum += stockDelta[j] * priceChanges[j][i];
             deltaP[i] = sum;
         }
+        /** SET optionDelta TO ZERO */
+        for(int i = 0; i < numSym; i++)
+            optionDelta[i] = 0;
+        System.out.print("\nReturning VaR for each moment. This will take a while...");
         /**
          * RETURN VaR FOR EACH MOMENT
          */
@@ -138,16 +127,21 @@ public class BackTest {
                 for (int k = i; k < intervals + i; k++)
                     stockSubsetInterval[j][k - i] = stockPrices[j][k];
             System.setOut(dummyStream);
-            momentsVaR[0][i] = Linear.main(symbol, stockSubsetInterval, stockDelta, timeHorizonN, confidenceX);
-            momentsVaR[1][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX);
-            momentsVaR[2][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, optionDelta, timeHorizonN, confidenceX);
+            double[] AnalyticalVaR = AnalyticalLinear.main(symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
+            momentsVaR[0][i] = AnalyticalVaR[0];
+            momentsVaR[1][i] = AnalyticalVaR[1];
+            momentsVaR[2][i] = AnalyticalVaR[2];
+            momentsVaR[3][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX);
+            momentsVaR[4][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX);
             System.setOut(originalStream);
         }
         System.out.println("\n\t" + momentsVaR[0].length + " values of VaR calculated.");
         /**
          * COUNT NUMBER OF DAYS WHERE LOSSES VIOLATE VaR
          */
-        int[] violations = {0, 0, 0};
+        int[] violations = new int[numMeasures];
+        for(int i = 0; i < numMeasures; i++)
+            violations[i] = 0;
         //i and j loops through vectors numMoments and numMeasures respectively
         for (int i = 0; i < numMoments; i++)
             for (int j = 0; j < numMeasures; j++) {
@@ -180,13 +174,6 @@ public class BackTest {
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
             else
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
-
-        /*** BINOMIAL TEST*/
-        System.out.println("\n\tBinomial Test");
-        double[] pvalue = testBinomial(violations,numMoments,confidenceX);
-        boolean[] rejectNull = booleanRejectNull(violations,numMoments,confidenceX);
-        System.out.println("\t\tP-Values:\t" + Arrays.toString(pvalue));
-        System.out.println("\t\tReject:\t" + Arrays.toString(rejectNull));
         return violations;
     }
 }

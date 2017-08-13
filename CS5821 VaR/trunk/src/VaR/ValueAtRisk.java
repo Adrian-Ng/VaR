@@ -1,7 +1,6 @@
 package VaR;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Created by Adrian on 15/07/2017.
@@ -40,10 +39,12 @@ public class ValueAtRisk {
         int timeHorizonN = Integer.parseInt(args[4]);
         // CONFIDENCE INTERVAL
         double confidenceX = Double.parseDouble(args[5]);
+
+        System.out.println("\tTime Horizon: " + timeHorizonN + " day(s)");
+        System.out.println("\tConfidence Level: " + confidenceX);
+
         // Get Stock Data
         double[][] stockPrices = getStocks.main(Symbol, intDays);
-
-        //System.out.println("\t\tVolatilities" + Arrays.toString(optionsVolatility));
         // Get Options Data
         optionsData[] options = getOptions.main(Symbol);
         //calculate yearly volatility for options
@@ -53,11 +54,11 @@ public class ValueAtRisk {
         PortfolioInfo.print(Symbol, stockPrices,stockDelta,options,optionDelta);
 
         // Get VaR Measures
-        double[][] analyticalVaR = Analytical.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
-        //double linearVaR = Linear.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
-        //double montecarloVaR = MonteCarlo.main(Symbol, stockPrices,stockDelta, optionDelta, timeHorizonN, confidenceX);
-        //double historicVaR = Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
-        //int[] violations = BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
+        //[][] analyticalVaR = AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        double[] linearVaR = AnalyticalLinear.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
+        double montecarloVaR = MonteCarlo.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
+        double historicVaR = Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
+        int[] violations = BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
     }
 }
 

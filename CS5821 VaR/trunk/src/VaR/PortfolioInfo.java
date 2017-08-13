@@ -19,6 +19,10 @@ public class PortfolioInfo {
             daystoMaturity[i] = options[i].getDaystoMaturity();
             currentPutPrices[i] = options[i].getPutPrices();
         }
+        /**
+         * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
+         */
+        double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
         double currentValue = 0;
         /** LOOP THROUGH EACH STOCK*/
         for (int i = 0; i < numSym; i++) {
@@ -30,8 +34,9 @@ public class PortfolioInfo {
             System.out.println("\t\t\tDelta:\t\t\t\t"       + stockDelta[i]);
             System.out.println("\t\t\tCurrent Price:\t\t"   + currentStockPrices[i]);
             System.out.println("\t\t\tValue:\t\t\t\t"       + stockDelta[i]*currentStockPrices[i]);
+            System.out.printf("\t\t\tMean Price Change:\t" + "%.4f", new StockParam(priceChanges[i]).getMean());
             /**PRINT OPTIONS VARIABLES*/
-            System.out.println("\t\tPut Variables:");
+            System.out.println("\n\t\tPut Variables:");
             System.out.println("\t\t\tDelta:\t\t\t\t"       + optionDelta[i]);
             System.out.println("\t\t\tCurrent Price:\t\t"   + currentPutPrices[i][numPuts-1]);
             System.out.println("\t\t\tValue:\t\t\t\t"       + optionDelta[i]*currentPutPrices[i][numPuts-1]);
