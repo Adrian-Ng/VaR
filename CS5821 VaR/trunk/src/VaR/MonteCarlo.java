@@ -47,10 +47,25 @@ public class MonteCarlo {
         return terminalPercentChange;
     }
 
-    public static double main(String[] symbol, double[][] stockPrices, int[] stockDelta, int[] optionDelta, int timeHorizonN, double confidenceX) {
+    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
+
+        int numSym = stockSymbol.length;
+        double[] currentStockPrices = new double[numSym];
+        double[][] strikePrices = new double[numSym][];
+        double[][] currentPutPrices = new double[numSym][];
+        long[] daystoMaturity = new long[numSym];
+        double currentValue = 0;
+        for (int i = 0; i < numSym; i++) {
+            currentStockPrices[i] = stockPrices[i][0];
+            strikePrices[i] = options[i].getStrikePrices();
+            daystoMaturity[i] = options[i].getDaystoMaturity();
+            currentPutPrices[i] = options[i].getPutPrices();
+            int numPuts = currentPutPrices[i].length;
+            currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
+        }
 
         //initialize ints
         int N = 24;                                         // 1 day expressed in hours. this is the number of steps.
@@ -59,20 +74,6 @@ public class MonteCarlo {
         double T = timeHorizonN;                            // 1 day
         double dt = T/N;                                    // size of the step where each step is 1 hour
 
-        int numSym = symbol.length;
-        double[] currentStockPrices = new double[numSym];
-        /**
-         * WHAT DOES THE PORTFOLIO LOOK LIKE?
-         */
-        for (int i = 0; i < numSym; i++) {
-            currentStockPrices[i] = stockPrices[i][0];
-            System.out.println("\t\t" + stockDelta[i] + " stocks in " + symbol[i] + ". Current price is: " + currentStockPrices[i]);
-        }
-        double currentValue = 0;
-        for (int i = 0; i < numSym; i++) {
-            currentValue += stockDelta[i] * currentStockPrices[i];
-        }
-        System.out.println("\t\tCurrent Value of Portfolio: " + currentValue);
 
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
@@ -95,15 +96,31 @@ public class MonteCarlo {
             System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i]));
 
         /**
-         * SIMULATE A NUMBER OF STOCK PERCENTAGE CHANGES
+         * SIMULATE TOMORROW'S STOCK PRICE PERCENTAGE CHANGES VIA MONTE CARLO METHOD
          */
         double[][] allPercentageChanges = new double[numSym][paths];
         for (int i = 0; i < paths; i++) {
             double[] tuplePercentageChanges = simuluatePath(N, currentStockPrices, dt, choleskyDecomposition);
-            //System.out.println(Arrays.toString(correlatedRandomVariables));
             for(int j =0; j < numSym; j++)
                 allPercentageChanges[j][i] = tuplePercentageChanges[j];
         }
+
+        /** SIMULATE ALL OF TOMORROW'S POSSIBLE STOCK PRICES FROM SIMULATED MONTE CARLO DATA*/
+        int numTuple = allPercentageChanges[0].length;
+        double[][] tomorrowStockPrices = new double[numSym][numTuple];
+        for(int i = 0; i < numSym; i++)
+            for(int  j = 0; j < numTuple; j++) {
+                tomorrowStockPrices[i][j] = allPercentageChanges[i][j] * currentStockPrices[i];
+                //System.out.println(tomorrowStockPrices[i][j]);
+            }
+
+        /** PRICE OPTIONS */
+        double[][] tomorrowPutPrices = new double[numSym][numTuple];
+        for(int i = 0; i < numSym; i++)
+            for(int  j = 0; j < numTuple; j++) {
+                tomorrowPutPrices[i][j] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j]);
+                //System.out.println(tomorrowPutPrices[i][j]);
+            }
 
         /**
          * REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES
@@ -112,7 +129,7 @@ public class MonteCarlo {
         for(int i = 0; i < allPercentageChanges[0].length;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += allPercentageChanges[j][i] * stockDelta[j] * currentStockPrices[j];
+                sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]) ;
             deltaP[i] = sum;
         }
         /**

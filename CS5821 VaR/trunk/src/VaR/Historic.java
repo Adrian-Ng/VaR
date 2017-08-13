@@ -14,7 +14,6 @@ public class Historic {
         System.out.println("=========================================================================");
 
         int numSym = stockSymbol.length;
-
         double[] currentStockPrices = new double[numSym];
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
@@ -28,25 +27,17 @@ public class Historic {
             int numPuts = currentPutPrices[i].length;
             currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
         }
-/*
-        for(int i = 0; i < numSym; i++){
-            System.out.println(strikePrices[i].length);
-            System.out.println(currentPutPrices[i].length);
-            for(int j = 0; j < currentPutPrices[i].length; j++)
-                System.out.println(currentPutPrices[i][j]);
-        }
-*/
 
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
          */
         double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
-        /** CALCULATE ALL OF TOMORROW'S POSSIBLE STOCK PRICES */
+        /** SIMULATE ALL OF TOMORROW'S POSSIBLE STOCK PRICES FROM HISTORICAL DATA*/
         int numTuple = priceChanges[0].length;
         double[][] tomorrowStockPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
             for(int  j = 0; j < numTuple; j++) {
-                tomorrowStockPrices[i][j] = priceChanges[i][j] * currentStockPrices[i];
+                tomorrowStockPrices[i][j] = (priceChanges[i][j] * currentStockPrices[i]) + currentStockPrices[i];
                 //System.out.println(tomorrowStockPrices[i][j]);
             }
 
@@ -70,7 +61,7 @@ public class Historic {
         /** GET VaR FROM xTH DELTAP */
         Arrays.sort(deltaP);
         double index = (1-confidenceX)*deltaP.length;
-        double VaR = (currentValue - deltaP[(int) index]) * Math.sqrt(timeHorizonN);
+        double VaR = (currentValue -  deltaP[(int) index]) * Math.sqrt(timeHorizonN);
         System.out.println("\n\t\tValue at Risk: " + VaR);
         return VaR;
     }
