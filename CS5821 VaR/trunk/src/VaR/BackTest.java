@@ -1,8 +1,6 @@
 package VaR;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.Arrays;
 import org.apache.commons.math3.distribution.*;
 
@@ -14,7 +12,7 @@ import org.apache.commons.math3.distribution.*;
  */
 public class BackTest {
 
-    public static int[] testCoverage(double confidenceX, int numMoments){
+    private static int[] testCoverage(double confidenceX, int numMoments){
         //https://www.value-at-risk.net/backtesting-coverage-tests/
         int alpha = numMoments + 1;
         double epsilon = 1 - confidenceX;
@@ -46,7 +44,7 @@ public class BackTest {
         return nonRejectionInterval;
     }
 
-    public static int[] testKupiecPF(double confidenceX, int numMoments){
+    private static int[] testKupiecPF(double confidenceX, int numMoments){
         int[] nonRejectionInterval = new int[2];
         nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.5);
         nonRejectionInterval[1] = (int) (numMoments * (1-confidenceX)*1.5);
@@ -82,6 +80,8 @@ public class BackTest {
         return nonRejectionInterval;
     }
 
+
+
     public static int[] main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
@@ -96,7 +96,7 @@ public class BackTest {
         int numSym = symbol.length;
 
         String[] nameMeasures = {"Analytical StDev", "Analytical EWMA", "Analytical GARCH(1,1)","Historic", "Monte Carlo"};
-        int numMeasures = nameMeasures.length;            //AnalyticalLinear + Historic +  Monte Carlo= 3
+        int numMeasures = nameMeasures.length;
         int numYears = 5;              //Get Five Years of Data for BackTest
         int numMoments = 1000;          //Number of VaRs to Calculate
         int intervals = 252;            //Number of Working Days in One Year
@@ -106,7 +106,7 @@ public class BackTest {
         /**
          * GET DAILY CHANGES IN ABSOLUTE PORTFOLIO VALUE
          */
-        double[][] priceChanges = new StockParam(stockPrices).getAbsoluteChanges();
+        double[][] priceChanges = new methods(stockPrices).getAbsoluteChanges();
         double[] deltaP = new double[priceChanges[0].length];
         for (int i = 0; i < priceChanges[0].length; i++) {
             double sum = 0.0;
@@ -115,8 +115,7 @@ public class BackTest {
             deltaP[i] = sum;
         }
         /** SET optionDelta TO ZERO */
-        for(int i = 0; i < numSym; i++)
-            optionDelta[i] = 0;
+        Arrays.fill(optionDelta,0);
         System.out.print("\nReturning VaR for each moment. This will take a while...");
         /**
          * RETURN VaR FOR EACH MOMENT
@@ -127,21 +126,21 @@ public class BackTest {
                 for (int k = i; k < intervals + i; k++)
                     stockSubsetInterval[j][k - i] = stockPrices[j][k];
             System.setOut(dummyStream);
-            double[] AnalyticalVaR = AnalyticalLinear.main(symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
+            double[] AnalyticalVaR = AnalyticalLinear.main(symbol, stockSubsetInterval,stockDelta,timeHorizonN, confidenceX);
             momentsVaR[0][i] = AnalyticalVaR[0];
             momentsVaR[1][i] = AnalyticalVaR[1];
             momentsVaR[2][i] = AnalyticalVaR[2];
-            momentsVaR[3][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX);
-            momentsVaR[4][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX);
+            momentsVaR[3][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX,0);
+            momentsVaR[4][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX,0);
             System.setOut(originalStream);
         }
-        System.out.println("\n\t" + momentsVaR[0].length + " values of VaR calculated.");
+        System.out.println("\n\t" + momentsVaR[0].length + " moments of VaR calculated.");
+
         /**
          * COUNT NUMBER OF DAYS WHERE LOSSES VIOLATE VaR
          */
         int[] violations = new int[numMeasures];
-        for(int i = 0; i < numMeasures; i++)
-            violations[i] = 0;
+        Arrays.fill(violations,0);
         //i and j loops through vectors numMoments and numMeasures respectively
         for (int i = 0; i < numMoments; i++)
             for (int j = 0; j < numMeasures; j++) {
@@ -151,7 +150,6 @@ public class BackTest {
                 if (-momentsVaR[j][i] >  sum)
                     violations[j]++;
             }
-        //int[] violations = {41, 55, 43};
         System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
         /**
          * STANDARD COVERAGE TEST
@@ -174,6 +172,8 @@ public class BackTest {
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
             else
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
+
+        new methods(momentsVaR).printMatrixToCSV(nameMeasures,"Backtest - " + numMoments + " moments");
         return violations;
     }
 }

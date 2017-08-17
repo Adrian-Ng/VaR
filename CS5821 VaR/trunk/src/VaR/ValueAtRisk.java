@@ -14,11 +14,10 @@ public class ValueAtRisk {
         /**
          * 1st Argument: Stock Symbols
          * 2nd Argument: Stock Deltas
-         * 3rd Argument: Options Symbols
-         * 4th Argument: Options Deltas
-         * 5th Argument: Number of Years of Data
-         * 6th Argument: Time Horizon
-         * 7th Argument: Confidence Level
+         * 3rd Argument: Options Deltas
+         * 4th Argument: Number of Years of Data
+         * 5th Argument: Time Horizon
+         * 6th Argument: Confidence Level
          */
         //SPLIT PIPE DELIMITED LIST OF SYMBOLS
         String[] Symbol = args[0].split("\\|");
@@ -49,16 +48,15 @@ public class ValueAtRisk {
         optionsData[] options = getOptions.main(Symbol);
         //calculate yearly volatility for options
         for(int i = 0; i < numSym; i++)
-            options[i].setVolatility(new StockParam(stockPrices[i]).getStandardDeviation()* Math.sqrt(252));
-
+            options[i].setVolatility(new methods(stockPrices[i]).getStandardDeviation()* Math.sqrt(252));
         PortfolioInfo.print(Symbol, stockPrices,stockDelta,options,optionDelta);
 
         // Get VaR Measures
-        //[][] analyticalVaR = AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
-        double[] linearVaR = AnalyticalLinear.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
-        double montecarloVaR = MonteCarlo.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
-        double historicVaR = Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX);
-        int[] violations = BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
+        AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        AnalyticalLinear.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        MonteCarlo.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
+        Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
+        BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
     }
 }
 

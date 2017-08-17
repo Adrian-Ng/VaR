@@ -8,7 +8,6 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -17,12 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.gson.*;
 
-
-/**
- * Created by Adrian on 15/07/2017.
- */
 public class getOptions {
-
     public static JsonObject getJSONfromURL(String urlStrAPI) throws IOException{
         //https://stackoverflow.com/a/21964051 user2654569
         URL url = new URL(urlStrAPI);
@@ -36,9 +30,7 @@ public class getOptions {
     }
 
     public static long getNumDaystoExpiry(String expiryYear, String expiryMonth, String expiryDayofMonth) {
-        Calendar cal = new GregorianCalendar();
         DateFormat format = new SimpleDateFormat("yyyy MM d", Locale.ENGLISH);
-
         Date expiryDate = null;
         Date currentDate = new Date();
         try {
@@ -62,7 +54,6 @@ public class getOptions {
         String expiryDayofMonth = expiry.get("d").toString();
         long NumDaystoExpiry = getNumDaystoExpiry(expiryYear, expiryMonth, expiryDayofMonth);
         System.out.println("\t\tDays to Expiration: " + NumDaystoExpiry);
-
         JsonArray jsonPuts = json.get("puts").getAsJsonArray();
         int numPuts = jsonPuts.size();
         double[] strikePrices = new double[numPuts];
@@ -80,9 +71,7 @@ public class getOptions {
             } catch(NumberFormatException e) {
                 putPrices[i] = Double.NaN;
             }
-            //System.out.println(putPrices[i]);
         }
-
         JsonArray jsonCalls = json.get("calls").getAsJsonArray();
         int numCalls = jsonCalls.size();
         double[] callPrices = new double[numCalls];
@@ -94,13 +83,11 @@ public class getOptions {
             } catch (NumberFormatException e) {
                 callPrices[i] = Double.NaN;
             }
-            //System.out.println(callPrices[i]);
         }
         options.setCallPrices(callPrices);
         options.setPutPrices(putPrices);
         options.setStrikePrices(strikePrices);
         options.setDaystoMaturity(NumDaystoExpiry);
-
         return options;
     }
 

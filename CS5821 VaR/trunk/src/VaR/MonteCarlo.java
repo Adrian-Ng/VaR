@@ -6,19 +6,19 @@ package VaR;
  * http://financetrain.com/calculating-var-using-monte-carlo-simulation/
  */
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
-public class MonteCarlo {
 
+public class MonteCarlo {
+    private static Random epsilon = new Random();
     public static double[] stepsRandomWalk(double[][] choleskyDecomposition) {
         int numSym = choleskyDecomposition.length;
         // Generate a vector of random variables, sampling from random Gaussian of mean 0 and sd 1
         double[] dz = new double[numSym];
-        for(int i = 0; i < numSym; i++) {
-            Random epsilon = new Random();
+        for(int i = 0; i < numSym; i++)
             dz[i] = epsilon.nextGaussian();
-        }
         //multiply the Cholesky Decomposition by the vector of random variables.
         double[] correlatedRandomVariables = new double[numSym];
         for(int i = 0; i < numSym; i++) {
@@ -47,7 +47,7 @@ public class MonteCarlo {
         return terminalPercentChange;
     }
 
-    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) {
+    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag)throws IOException {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
@@ -74,23 +74,22 @@ public class MonteCarlo {
         double T = timeHorizonN;                            // 1 day
         double dt = T/N;                                    // size of the step where each step is 1 hour
 
-
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
          */
-        double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
 
         /**
          * CALCULATE THE COVARIANCE MATRIX FROM THE STOCK MARKET VARIABLES
          */
-        double[][] covarianceMatrix = new StockParam(priceChanges).getCovarianceMatrix();
+        double[][] covarianceMatrix = new methods(priceChanges).getCovarianceMatrix();
         System.out.println("\n\t\tCovariance Matrix of historical price changes:");
         for(int i = 0; i < numSym; i++)
             System.out.println("\t\t" + Arrays.toString(covarianceMatrix[i]));
         /**
          * CALCULATE THE CHOLESKY DECOMPOSITION FROM THE STOCK MARKET VARIABLES
          */
-        double[][] choleskyDecomposition = new StockParam(priceChanges).getCholeskyDecomposition();
+        double[][] choleskyDecomposition = new methods(priceChanges).getCholeskyDecomposition();
         System.out.println("\n\t\tCholesky Decomposition of historical price changes:");
         for(int i = 0; i < numSym; i++)
             System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i]));
@@ -109,18 +108,18 @@ public class MonteCarlo {
         int numTuple = allPercentageChanges[0].length;
         double[][] tomorrowStockPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
-            for(int  j = 0; j < numTuple; j++) {
+            for(int  j = 0; j < numTuple; j++)
                 tomorrowStockPrices[i][j] = allPercentageChanges[i][j] * currentStockPrices[i];
-                //System.out.println(tomorrowStockPrices[i][j]);
-            }
+
+
 
         /** PRICE OPTIONS */
         double[][] tomorrowPutPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
-            for(int  j = 0; j < numTuple; j++) {
+            for(int  j = 0; j < numTuple; j++)
                 tomorrowPutPrices[i][j] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j]);
-                //System.out.println(tomorrowPutPrices[i][j]);
-            }
+
+
 
         /**
          * REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES
@@ -129,7 +128,7 @@ public class MonteCarlo {
         for(int i = 0; i < allPercentageChanges[0].length;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]) ;
+                sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]);
             deltaP[i] = sum;
         }
         /**
@@ -139,6 +138,17 @@ public class MonteCarlo {
         double index = (1-confidenceX)*deltaP.length;
         double VaR = currentValue - deltaP[(int) index];
         System.out.println("\n\t\tValue at Risk: " + VaR);
+
+        /**
+         * PRINT DATA TO CSV
+         */
+
+        if (printFlag == 1) {
+            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol, "MonteCarlo stockPrices - " + confidenceX + " - " + timeHorizonN);
+            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol, "MonteCarlo putPrices - " + confidenceX + " - " + timeHorizonN);
+            new methods(deltaP).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value - " + confidenceX + " - " + timeHorizonN);
+        }
+
         return VaR;
     }
 }
