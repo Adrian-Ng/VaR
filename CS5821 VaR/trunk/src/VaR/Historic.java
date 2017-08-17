@@ -1,5 +1,6 @@
 package VaR;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -8,7 +9,7 @@ import java.util.Arrays;
  */
 public class Historic {
 
-    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX){
+    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag)throws IOException{
         System.out.println("=========================================================================");
         System.out.println("Historic.java");
         System.out.println("=========================================================================");
@@ -31,23 +32,21 @@ public class Historic {
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
          */
-        double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
         /** SIMULATE ALL OF TOMORROW'S POSSIBLE STOCK PRICES FROM HISTORICAL DATA*/
         int numTuple = priceChanges[0].length;
         double[][] tomorrowStockPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
-            for(int  j = 0; j < numTuple; j++) {
+            for(int  j = 0; j < numTuple; j++)
                 tomorrowStockPrices[i][j] = (priceChanges[i][j] * currentStockPrices[i]) + currentStockPrices[i];
-                //System.out.println(tomorrowStockPrices[i][j]);
-            }
 
         /** PRICE OPTIONS */
         double[][] tomorrowPutPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
-            for(int  j = 0; j < numTuple; j++) {
+            for(int  j = 0; j < numTuple; j++)
                 tomorrowPutPrices[i][j] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j]);
-                //System.out.println(tomorrowPutPrices[i][j]);
-            }
+
+
         /**
          * REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES
          */
@@ -63,6 +62,15 @@ public class Historic {
         double index = (1-confidenceX)*deltaP.length;
         double VaR = (currentValue -  deltaP[(int) index]) * Math.sqrt(timeHorizonN);
         System.out.println("\n\t\tValue at Risk: " + VaR);
+
+        /**
+         * PRINT DATA TO CSV
+         */
+        if (printFlag == 1){
+            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol,"Historic stockPrices - " + confidenceX + " - " + timeHorizonN);
+            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol,"Historic putPrices - " + confidenceX + " - " + timeHorizonN);
+            new methods(deltaP).printVectorToCSV("Portfolio Value", "Historic Portfolio Value - " + confidenceX + " - " + timeHorizonN);
+        }
         return VaR;
     }
 }

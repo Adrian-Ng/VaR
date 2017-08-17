@@ -1,8 +1,6 @@
 package VaR;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
-import net.finmath.timeseries.models.parametric.GARCH;
-import java.util.Map;
 
 /**
  * Created by Adrian on 21/06/2017.
@@ -20,7 +18,7 @@ public class AnalyticalSingleStock {
         String[] nameVolatilityMeasures = {"Standard Deviation", "EWMA", "GARCH(1,1)"};
         double VaR[][] = new double[nameVolatilityMeasures.length][numSym];
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
-        double[][] priceChanges = new StockParam(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
 
         /** LOOP THROUGH EACH STOCK*/
         for (int i = 0; i < numSym; i++) {
@@ -32,17 +30,14 @@ public class AnalyticalSingleStock {
             System.out.println("\t\t\tValue:\t\t\t\t"       + stockDelta[i]*stockPrices[i][0]);
 
             /** CALCULATE VOLATILITIES*/
-            double volatilityStDev = new StockParam(priceChanges[i]).getStandardDeviation();
-            double volatilityEWMA = new StockParam(priceChanges[i],priceChanges[i]).getEWMAVolatility();
-            double[] params = new StockParam(stockPrices[i]).getGARCHParams();
-            double volatilityGARCH11 = Math.sqrt(params[0]/(1-params[1]-params[2]));
-
+            double volatilityStDev = new methods(priceChanges[i]).getStandardDeviation();
+            double volatilityEWMA = new methods(priceChanges[i],priceChanges[i]).getEWMAVolatility();
+            double volatilityGARCH11 = new methods(priceChanges[i], priceChanges[i]).getGARCH11Volatility();
             /** PRINT VOLATILITIES*/
             System.out.println("\n\t\tVolatilities:");
             System.out.println("\t\t\tStandard Deviation: " + volatilityStDev);
             System.out.println("\t\t\tEWMA:\t\t\t\t"        + volatilityEWMA);
             System.out.println("\t\t\tGARCH(1,1):\t\t\t"    + volatilityGARCH11);
-            System.out.println("\t\t\t\tOmega:\t\t\t" + params[0] + "\n\t\t\t\tAlpha:\t\t\t" + params[1] + "\n\t\t\t\tBeta:\t\t\t" + params[2]);
 
             /** CALCULATE VAR FOR EACH VOLATILITY MEASURE*/
             VaR[0][i] = volatilityStDev * stockDelta[i] * stockPrices[i][0] * Math.sqrt(timeHorizonN) * riskPercentile;

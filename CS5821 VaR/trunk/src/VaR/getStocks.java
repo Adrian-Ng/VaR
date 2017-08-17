@@ -6,9 +6,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-
-
 /**
  * THIS PROCESS WILL ACCESS THE GOOGLE FINANCE API
  * THE INPUT ARGUMENTS ARE:
@@ -17,7 +14,6 @@ import java.util.HashMap;
  * 3rd Argument: Number of Years of Data
  * 4th Argument: Time Horizon
  * 5th Argument: Confidence Level
-
  *
  * THE ATTRIBUTES OF THE DATA ARE
  *      ﻿Date,Open,High,Low,Close,Volume
