@@ -43,7 +43,6 @@ public class BackTest {
             }
         return nonRejectionInterval;
     }
-
     private static int[] testKupiecPF(double confidenceX, int numMoments){
         int[] nonRejectionInterval = new int[2];
         nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.5);
@@ -76,12 +75,8 @@ public class BackTest {
                 nonRejectionInterval[1] = b - i + 1;//ADD 1 TO ROUND UP
             }
         }
-        //System.out.println(Arrays.toString(nonRejectionInterval));
         return nonRejectionInterval;
     }
-
-
-
     public static int[] main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
@@ -103,9 +98,7 @@ public class BackTest {
         double[][] momentsVaR = new double[numMeasures][numMoments];
         // Get Stock Data
         double[][] stockPrices = getStocks.main(symbol, numYears);
-        /**
-         * GET DAILY CHANGES IN ABSOLUTE PORTFOLIO VALUE
-         */
+        /** GET DAILY CHANGES IN ABSOLUTE PORTFOLIO VALUE*/
         double[][] priceChanges = new methods(stockPrices).getAbsoluteChanges();
         double[] deltaP = new double[priceChanges[0].length];
         for (int i = 0; i < priceChanges[0].length; i++) {
@@ -114,12 +107,10 @@ public class BackTest {
                 sum += stockDelta[j] * priceChanges[j][i];
             deltaP[i] = sum;
         }
-        /** SET optionDelta TO ZERO */
+        /** SET optionDelta TO ZERO*/
         Arrays.fill(optionDelta,0);
+        /** RETURN VaR FOR EACH MOMENT*/
         System.out.print("\nReturning VaR for each moment. This will take a while...");
-        /**
-         * RETURN VaR FOR EACH MOMENT
-         */
         for (int i = 0; i < numMoments; i++) {
             double[][] stockSubsetInterval = new double[numSym][intervals];
             for (int j = 0; j < numSym; j++)
@@ -135,10 +126,7 @@ public class BackTest {
             System.setOut(originalStream);
         }
         System.out.println("\n\t" + momentsVaR[0].length + " moments of VaR calculated.");
-
-        /**
-         * COUNT NUMBER OF DAYS WHERE LOSSES VIOLATE VaR
-         */
+        /** COUNT NUMBER OF DAYS WHERE LOSSES VIOLATE VaR*/
         int[] violations = new int[numMeasures];
         Arrays.fill(violations,0);
         //i and j loops through vectors numMoments and numMeasures respectively
@@ -151,9 +139,7 @@ public class BackTest {
                     violations[j]++;
             }
         System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
-        /**
-         * STANDARD COVERAGE TEST
-         */
+        /** STANDARD COVERAGE TEST*/
         int[] nonRejectionIntervalStandardCoverage = testCoverage(confidenceX,numMoments);
         System.out.println("\n\tNon-Rejection Interval from Standard Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalStandardCoverage));
         for(int i = 0; i < violations.length; i++)
@@ -161,10 +147,7 @@ public class BackTest {
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
             else
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
-
-        /**
-         * KUPIEC'S PF COVERAGE TEST
-         */
+        /** KUPIEC'S PF COVERAGE TEST*/
         int[] nonRejectionIntervalKupiecPF = testKupiecPF(confidenceX,numMoments);
         System.out.println("\n\tNon-Rejection Interval from Kupiec's Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
         for(int i = 0; i < violations.length; i++)

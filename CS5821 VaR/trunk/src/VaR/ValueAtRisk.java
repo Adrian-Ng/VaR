@@ -56,7 +56,7 @@ public class ValueAtRisk {
         AnalyticalLinear.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
         MonteCarlo.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
         Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
-        BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
+        //BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
     }
 }
 
