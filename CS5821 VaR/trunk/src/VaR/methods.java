@@ -1,19 +1,11 @@
 package VaR;
-
-
-import net.finmath.timeseries.models.parametric.GARCH;
 import org.apache.commons.math3.linear.*;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
-/**
- * Created by Adrian on 08/07/2017.
- */
 public class methods {
     //instance variable
     private double[] singleStock;
@@ -25,15 +17,21 @@ public class methods {
     {
         this.singleStock = singleStock;
     }
-
     public methods(double[] xStock, double[] yStock){
         this.xStock = xStock;
         this.yStock = yStock;
     }
-
     public methods(double[][] multiStock)
     {
         this.multiStock = multiStock;
+    }
+
+    public double getMean(){
+        int numTuple = singleStock.length;
+        double sum = 0.0;
+        for(int i = 0; i < numTuple; i++)
+            sum += singleStock[i];
+        return sum/numTuple;
     }
 
     public double getEWMAVariance(){
@@ -44,66 +42,35 @@ public class methods {
             EWMA = lambda * EWMA + (1-lambda) * xStock[numTuple-1 - i]*yStock[numTuple-1 - i];
         return EWMA;
     }
-
     public double getEWMAVolatility(){
                return Math.sqrt(getEWMAVariance());
     }
-
-    public double[] getGARCHParams(){
-        GARCH modelGARCH = new GARCH(singleStock);
-        double[] params = new double[3];
-        Map<String, Object> paramsGARCH = modelGARCH.getBestParameters();
-        params[0] = Double.parseDouble(paramsGARCH.get("Omega").toString());
-        params[1] = Double.parseDouble(paramsGARCH.get("Alpha").toString());
-        params[2] = Double.parseDouble(paramsGARCH.get("Beta").toString());
-        return params;
-    }
-
-    public double getMean(){
-        int numTuple =  singleStock.length;
-        double sum = 0;
-        for (int i = 0; i< numTuple; i++)
-            sum += singleStock[i];
-        return sum/numTuple;
-    }
-
     public double getVariance(){
         int numTuple =  singleStock.length;
-        double mean = getMean();
         double sum = 0;
         for (int i = 0; i< numTuple; i++)
-            sum += Math.pow((singleStock[i] - mean),2);
+            sum += Math.pow((singleStock[i]),2);
         return sum/(numTuple-1);
     }
-
     public double getStandardDeviation(){
         return Math.sqrt(getVariance());
     }
-
     public double getCovariance(){
         int numTuples = xStock.length;
-        //Get Mean
-        double meanX = new methods(xStock).getMean();
-        double meanY = new methods(yStock).getMean();
         //Calculation
         double sum = 0;
         for (int i = 0; i < numTuples; i++)
-            sum +=(xStock[i] - meanX)*(yStock[i] - meanY);
+            sum +=(xStock[i])*(yStock[i]);
         return sum/(numTuples-1);
     }
-
     public double[][] getCovarianceMatrix(){
         int numSym = multiStock.length;
-        double[] meanVector = new double[numSym];
-        for(int i = 0; i < numSym; i++)
-            meanVector[i] = new methods(multiStock[i]).getMean();
         double[][] covarianceMatrix = new double[numSym][numSym];
         for(int i = 0; i < numSym; i++)
             for(int j = 0;j < numSym; j++)
                 covarianceMatrix[i][j] = new methods(multiStock[i], multiStock[j]).getCovariance();
         return covarianceMatrix;
     }
-
     public double[][] getCholeskyDecomposition(){
         double[][] covarianceMatrix = new methods(multiStock).getCovarianceMatrix();
         double[][] cholesky = new double[covarianceMatrix.length][covarianceMatrix.length];
@@ -126,7 +93,6 @@ public class methods {
                 }
         return cholesky;
     }
-
     public double[][] getPercentageChanges(){
         int numSym = multiStock.length;
         int numTuples = multiStock[0].length;
@@ -136,7 +102,6 @@ public class methods {
                 priceDiff[i][j] = ((multiStock[i][j]-multiStock[i][j+1])/multiStock[i][j+1]);
         return priceDiff;
     }
-
     public double[][] getAbsoluteChanges(){
         int numSym = multiStock.length;
         int numTuples = multiStock[0].length;
@@ -146,11 +111,9 @@ public class methods {
                 priceDiff[i][j] = multiStock[i][j]-multiStock[i][j+1];
         return priceDiff;
     }
-
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     LocalDateTime Date = LocalDateTime.now();
     String dateStr = Date.format(formatter);
-
     public void printMatrixToCSV(String[] header, String title)throws IOException{
         //https://stackoverflow.com/questions/15364342/export-array-values-to-csv-file-java
         //https://stackoverflow.com/questions/34958829/how-to-save-a-2d-array-into-a-text-file-with-bufferedwriter
@@ -175,7 +138,6 @@ public class methods {
         br.write(sb.toString());
         br.close();
     }
-
     public void printVectorToCSV(String header, String title) throws IOException{
         int numRows = singleStock.length;
         BufferedWriter br = new BufferedWriter(new FileWriter(dateStr + " - " + title + ".csv"));
@@ -186,7 +148,6 @@ public class methods {
             sb.append("\n");
         }
     }
-
     private int earlyexit = 0;
     private double λ;
     private double[] LevenBergMarquardt(double[] uSquaredArray){
@@ -196,8 +157,8 @@ public class methods {
  • Compute χ2(a) (= likelihood).
  • Pick a modest value for λ, say λ = 0.001.
  • (†) Solve the linear equations (15.5.14) for δa and evaluate χ2(a + δa).
- • If χ2(a + δa) ≥χ2(a), increase λ by a factor of 10 (or any other substantial factor) and go back to (†).
- • If χ2(a + δa) < χ2(a), decrease λ by a factor of 10, update the trial solution a ← a + δa, and go back to (†)
+ • If χ2(a + δa) ≥χ2(a), decrease λ by a factor of 10 (or any other substantial factor) and go back to (†).
+ • If χ2(a + δa) < χ2(a), increase λ by a factor of 10, update the trial solution a ← a + δa, and go back to (†)
  */
         λ = 0.001; //non-dimensional fudge factor
         double[] parameters = new double[3];
@@ -216,10 +177,8 @@ public class methods {
             }
             else λ *= 10; //if unsuccessful, use a larger fudge factor
         }
-        //System.out.println(likelihood);
         return parameters;
     }
-
     private double[] getTrialParameters(double[] parameters, double[] uSquaredArray){
         double omega    = parameters[0];
         double alpha    = parameters[1]; //not to be confused with the alpha matrix in LevenbergMarquardt
@@ -279,7 +238,6 @@ public class methods {
         }
         return trialParameters;
     }
-
     private double likelihood(double[] uSquaredArray, double parameters[]){
         double  omega    = parameters[0]
             ,   alpha    = parameters[1] //not to be confused with the alpha matrix in LevenbergMarquardt
@@ -296,7 +254,6 @@ public class methods {
             likelihood += -Math.log(variance[i]) - (uSquaredArray[i+1]/variance[i]);
         return likelihood;
     }
-
     public double getGARCH11Variance(){
         //Generalized Autoregressive Conditional Heteroskedastic Process
         int numTuple =  xStock.length;
@@ -314,7 +271,6 @@ public class methods {
             sigmaSquared = omega + (alpha*uSquared[i]) + (beta*sigmaSquared);
        return sigmaSquared;
     }
-
     public double getGARCH11Volatility(){
         return Math.sqrt(getGARCH11Variance());
     }

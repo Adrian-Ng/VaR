@@ -1,6 +1,7 @@
 package VaR;
 
-import java.util.Arrays;
+
+import java.util.Random;
 
 /**
  * Created by Adrian on 22/06/2017.
@@ -40,100 +41,8 @@ public class optionsData {
     }
     public void setDaystoMaturity(long daystoMaturity){ this.daystoMaturity = daystoMaturity; }
     public void setVolatility(double volatility) {this.volatility = volatility; }
-    //TREES
 
-    private static double gridOptionPrice[][];
-    private final double dt = 1.0/365.0; // size of the step where each step is 1 day
     private final double r = 0.07;// interest rate
-
-    private double[][] simulateStockPrices(double stockPrice, double u, double d, int T) {
-        double gridStockPrice[][] = new double[T][T];
-        gridStockPrice[0][0] = stockPrice;
-        // compute increase by u on the extreme side only
-        for (int i = 1; i < T; i++)
-            gridStockPrice[0][i] = gridStockPrice[0][i-1] * u;
-        // compute all subsequent decrease by d
-        for (int j = 1; j < T; j++) {
-            for (int i = 1; i < T; i++)
-                gridStockPrice[j][i] = gridStockPrice[j - 1][i - 1] * d;
-            System.out.println(Arrays.toString(gridStockPrice[j]));
-        }
-        return gridStockPrice;
-    }
-
-    public double getEuropeanCall (double stockPrice) {
-        double X = this.strikePrices[strikePrices.length-1];
-        int T = (int) this.daystoMaturity;
-        double u = Math.exp(volatility*Math.sqrt(dt));           // stock price increase
-        double d = Math.exp(-volatility*Math.sqrt(dt));          // stock price decrease
-        double p = (Math.exp(r*dt)-d)/(u-d);                // 0.4975
-        double[][] gridStockPrice = simulateStockPrices(stockPrice,u,d,T);
-        gridOptionPrice = new double[T][T];
-        //compute option prices at maturity
-        for (int i = 0; i < T; i++)
-            gridOptionPrice[i][T-1] = Math.max(gridStockPrice[i][T-1]-X,0.0);
-        // compute subsequent option prices
-        for (int i = T-2;i >= 0; i--)
-            for(int j = T-2; j >= 0; j--)
-                gridOptionPrice[j][i] = Math.exp(-r*dt)*((p* gridOptionPrice[j][i+1])+(1-p)* gridOptionPrice[j+1][i+1]);
-        return(gridOptionPrice[0][0]);
-    }
-
-    public double getEuropeanPut (double stockPrice) {
-        double X = this.strikePrices[strikePrices.length-1];
-        int T = (int) this.daystoMaturity;
-        double u = Math.exp(volatility*Math.sqrt(dt));           // stock price increase
-        double d = Math.exp(-volatility*Math.sqrt(dt));          // stock price decrease
-        double p = (Math.exp(r*dt)-d)/(u-d);                // 0.4975
-        double[][] gridStockPrice = simulateStockPrices(stockPrice,u,d,T);
-        gridOptionPrice = new double[T][T];
-        //compute option prices at maturity
-        for (int i = 0; i < T; i++)
-            gridOptionPrice[i][T-1] = Math.max(X-gridStockPrice[i][T-1],0.0);
-        // compute subsequent option prices
-        for (int i = T-2;i >= 0; i--)
-            for(int j = T-2; j >= 0; j--)
-                gridOptionPrice[j][i] = Math.exp(-r*dt)*((p*gridOptionPrice[j][i+1])+(1-p)*gridOptionPrice[j+1][i+1]);
-        return(gridOptionPrice[0][0]);
-    }
-
-    public double getAmericanCall (double stockPrice) {
-        double X = this.strikePrices[strikePrices.length-1];
-        int T = (int) this.daystoMaturity;
-        double u = Math.exp(volatility*Math.sqrt(dt));           // stock price increase
-        double d = Math.exp(-volatility*Math.sqrt(dt));          // stock price decrease
-        double p = (Math.exp(r*dt)-d)/(u-d);                // 0.4975
-        double[][] gridStockPrice = simulateStockPrices(stockPrice,u,d,T);
-        gridOptionPrice = new double[T][T];
-        //compute option prices at maturity
-        for (int i = 0; i < T; i++)
-            gridOptionPrice[i][T-1] = Math.max(gridStockPrice[i][T-1]-X,0.0);
-        // compute subsequent option prices
-        for (int i = T-2;i >= 0; i--)
-            for (int j = T - 2; j >= 0; j--)
-                gridOptionPrice[j][i] = Math.exp(-r * dt) * ((p * gridOptionPrice[j][i + 1]) + (1 - p) * gridOptionPrice[j + 1][i + 1]);
-        return(gridOptionPrice[0][0]);
-    }
-
-    public double getAmericanPut (double stockPrice) {
-        double X = this.strikePrices[strikePrices.length-1];
-        int T = (int) this.daystoMaturity;
-        double u = Math.exp(volatility * Math.sqrt(dt));           // stock price increase
-        double d = Math.exp(-volatility * Math.sqrt(dt));          // stock price decrease
-        double p = (Math.exp(r * dt) - d) / (u - d);                // 0.4975
-        double[][] gridStockPrice = simulateStockPrices(stockPrice,u, d,T);
-        gridOptionPrice = new double[T][T];
-        //compute option prices at maturity
-        for (int i = 0; i < T; i++)
-            gridOptionPrice[i][T - 1] = Math.max(gridStockPrice[i][T - 1] - X, 0.0);
-        // compute subsequent option prices
-        for (int i = T - 2; i >= 0; i--)
-            for (int j = T - 2; j >= 0; j--)
-                // consider Early Exercise. What's larger: the calculated option price or the difference between the strike and share price?
-                gridOptionPrice[j][i] = Math.max(Math.exp(-r * dt) * ((p * gridOptionPrice[j][i + 1]) + (1 - p) * gridOptionPrice[j + 1][i + 1]), X - gridStockPrice[j][i]);
-        return (gridOptionPrice[0][0]);
-    }
-
     private  double CNDF(double x)
     {
         int neg = (x < 0d) ? 1 : 0;
@@ -145,21 +54,88 @@ public class optionsData {
         y = 1.0 - 0.398942280401 * Math.exp(-0.5 * x * x) * y;
         return (1d - neg) * y + neg * (1d - y);
     }
-
-    public double getBlackScholesPut(double stockPrice){
+    private double getBlackScholesOptionPrices(double stockPrice, int flag){
         double X = this.strikePrices[strikePrices.length-1];
-        double T = this.daystoMaturity/365;
+        double T = (this.daystoMaturity-1)/252;
         double S0 = stockPrice;
         double sigma = volatility;
         //calculate d1
         double d1 = (Math.log(S0/X)+ (r +(Math.pow(sigma,2)/2))*T)/(sigma*Math.sqrt(T));
         //calculate d2
         double d2 = d1 - (sigma*Math.sqrt(T));
-
-        //calculate call
-        //double call = (S0*CNDF(d1))-(X*Math.exp(-r*T)*CNDF(d2));
-        //calculate put
-        double put = X*Math.exp(-r*T)*CNDF(-d2)-S0*CNDF(-d1);
-        return put;
+        if (flag == 0) {
+            //calculate call
+            double call = (S0 * CNDF(d1)) - (X * Math.exp(-r * T) * CNDF(d2));
+            return call;
+        }
+        else {
+            //calculate put
+            double put = X * Math.exp(-r * T) * CNDF(-d2) - S0 * CNDF(-d1);
+            return put;
+        }
     }
+    public double getBlackScholesPut(double stockPrice){
+        return getBlackScholesOptionPrices(stockPrice, 1);
+    }
+    public double getBlackScholesCall(double stockPrice){
+        return getBlackScholesOptionPrices(stockPrice, 0);
+    }
+
+    private double grid[];
+    Random epsilon = new Random();
+    private double stepsRandomWalk(double dt) {
+        // sample from random Gaussian of mean 0 and sd 1
+        double dz = epsilon.nextGaussian()*Math.sqrt(dt);
+        return dz;
+    }
+    private double simuluatePath(int N, double S0, double dt, double r, double sigma) {
+        // allocate memory to grid
+        grid = new double[N];
+        grid[0] = S0;
+        for (int i = 1; i < N; i++){
+            double dz = stepsRandomWalk(dt);
+            grid[i] = grid[i-1] + (r*grid[i-1]*dt)+(sigma*grid[i-1]*dz);
+            //System.out.println(dz);
+        }
+        return grid[N-1];
+    }
+    private double getMonteCarloOptionPrices(double stockPrice, int flag) {
+        double X = this.strikePrices[strikePrices.length-1];
+        int N = (int) (this.daystoMaturity-1);
+        int paths = 10000;                                 // number of random walks we will compute
+        double S0 = stockPrice;                             // initial asset price
+        double sigma = volatility;                          // volatility
+        double r = 0.07;                                    // interest rate
+        double T = N/252;                                   // time range in yearly scale
+        double dt = 1/N;                                    // size of the step where each step is 1 day
+        double expectationEuroCall = 0.0;
+        double expectationEuroPut = 0.0;
+        // simulate a number of stock price trajectories
+        for (int i = 0; i < paths ; i ++) {
+            double St = simuluatePath(N, S0, dt, r, sigma);
+            expectationEuroCall += Math.max(St-X,0);
+            expectationEuroPut += Math.max(X-St,0);
+        }
+        // calculate the mean to get the expected rate
+        expectationEuroCall = expectationEuroCall/paths;
+        expectationEuroPut = expectationEuroPut/paths;
+        if (flag==0) {
+            // apply discounting
+            double callPV = Math.exp(-r * T) * expectationEuroCall;
+            return callPV;
+        }
+        else {
+            double putPV = Math.exp(-r * T) * expectationEuroPut;
+            return putPV;
+        }
+    }
+
+    public double getMonteCarloCall(double stockPrice) {
+        return getMonteCarloOptionPrices(stockPrice,0);
+    }
+
+    public double getMonteCarloPut(double stockPrice) {
+        return getMonteCarloOptionPrices(stockPrice,1);
+    }
+
 }
