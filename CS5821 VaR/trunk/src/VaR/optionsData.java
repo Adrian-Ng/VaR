@@ -81,61 +81,6 @@ public class optionsData {
         return getBlackScholesOptionPrices(stockPrice, 0);
     }
 
-    private double grid[];
-    Random epsilon = new Random();
-    private double stepsRandomWalk(double dt) {
-        // sample from random Gaussian of mean 0 and sd 1
-        double dz = epsilon.nextGaussian()*Math.sqrt(dt);
-        return dz;
-    }
-    private double simuluatePath(int N, double S0, double dt, double r, double sigma) {
-        // allocate memory to grid
-        grid = new double[N];
-        grid[0] = S0;
-        for (int i = 1; i < N; i++){
-            double dz = stepsRandomWalk(dt);
-            grid[i] = grid[i-1] + (r*grid[i-1]*dt)+(sigma*grid[i-1]*dz);
-            //System.out.println(dz);
-        }
-        return grid[N-1];
-    }
-    private double getMonteCarloOptionPrices(double stockPrice, int flag) {
-        double X = this.strikePrices[strikePrices.length-1];
-        int N = (int) (this.daystoMaturity-1);
-        int paths = 10000;                                 // number of random walks we will compute
-        double S0 = stockPrice;                             // initial asset price
-        double sigma = volatility;                          // volatility
-        double r = 0.07;                                    // interest rate
-        double T = N/252;                                   // time range in yearly scale
-        double dt = 1/N;                                    // size of the step where each step is 1 day
-        double expectationEuroCall = 0.0;
-        double expectationEuroPut = 0.0;
-        // simulate a number of stock price trajectories
-        for (int i = 0; i < paths ; i ++) {
-            double St = simuluatePath(N, S0, dt, r, sigma);
-            expectationEuroCall += Math.max(St-X,0);
-            expectationEuroPut += Math.max(X-St,0);
-        }
-        // calculate the mean to get the expected rate
-        expectationEuroCall = expectationEuroCall/paths;
-        expectationEuroPut = expectationEuroPut/paths;
-        if (flag==0) {
-            // apply discounting
-            double callPV = Math.exp(-r * T) * expectationEuroCall;
-            return callPV;
-        }
-        else {
-            double putPV = Math.exp(-r * T) * expectationEuroPut;
-            return putPV;
-        }
-    }
 
-    public double getMonteCarloCall(double stockPrice) {
-        return getMonteCarloOptionPrices(stockPrice,0);
-    }
-
-    public double getMonteCarloPut(double stockPrice) {
-        return getMonteCarloOptionPrices(stockPrice,1);
-    }
 
 }

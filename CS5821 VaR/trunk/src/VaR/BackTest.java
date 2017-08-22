@@ -12,71 +12,87 @@ import org.apache.commons.math3.distribution.*;
  */
 public class BackTest {
 
-    private static int[] testCoverage(double confidenceX, int numMoments){
+    private static int[] testCoverage(double confidenceX, double epsilon, int numMoments){
         //https://www.value-at-risk.net/backtesting-coverage-tests/
         int alpha = numMoments + 1;
-        double epsilon = 1 - confidenceX;
-        int[] nonRejectionInterval = new int[2];
         //We reject the VaR measure if the number of violations is not in this interval
-        //We don't yet know what this interval is. So we initialize some starting points.
-        nonRejectionInterval[0] = (int) (numMoments * epsilon*0.25);
-        nonRejectionInterval[1] = (int) (numMoments * epsilon*2.0);
-        BinomialDistribution distribution = new BinomialDistribution(alpha, epsilon);
-        int a = nonRejectionInterval[0];
-        int b = nonRejectionInterval[1];
-
-        double[] incrementCDF = new double[b-a];
-        double[] decrementCDF = new double[b-a];
-        for(int i = 0; i < incrementCDF.length; i++) {
-            incrementCDF[i] = distribution.cumulativeProbability(a + i);
-            decrementCDF[i] = 1 - distribution.cumulativeProbability(b - i);
+        BinomialDistribution distribution = new BinomialDistribution(alpha, 1-confidenceX);
+        //maximise a such that Pr(X < a) ≤ ε/2
+        double pr = 0.0;
+        int a = 0;
+        while(pr <= epsilon/2){
+            pr = distribution.cumulativeProbability(a);
+            a++;
         }
-        double maximize = 0.0;
-        for(int i = 0; incrementCDF[i] <= epsilon/2; i++)
-            for(int j = 0; decrementCDF[j] <= epsilon/2; j++){
-                double k = incrementCDF[i] + decrementCDF[j];
-                if(k<=epsilon){
-                    maximize = Math.max(k,maximize);
-                    nonRejectionInterval[0] = a + i;
-                    nonRejectionInterval[1] = b - j + 1;
-                }
-            }
+        //minimize b such that Pr(b < X) ≤ ε/2
+        pr = 1.0;
+        int b = 0;
+        while(pr >= epsilon/2){
+            pr = 1- distribution.cumulativeProbability(b);
+            b++;
+        }
+        //maximise Pr(X ∉ [a + n, b]) ≤ ε
+        double pr1 = 0.0;
+        int n1 = 0;
+        while(pr1 <= epsilon/2){
+            pr1 = distribution.cumulativeProbability(a + n1) + (1- distribution.cumulativeProbability(b));
+            n1++;
+        }
+        //maximise Pr(X ∉ [a + n, b]) ≤ ε
+        double pr2 = 0.0;
+        int n2 = 0;
+        while(pr2 <= epsilon/2){
+            pr2 = distribution.cumulativeProbability(a) + (1- distribution.cumulativeProbability(b-n2));
+            n2++;
+        }
+        int[] nonRejectionInterval = new int[2];
+        if(pr1 > pr2) {
+            nonRejectionInterval[0] = a + n1;
+            nonRejectionInterval[1] = b;
+        }
+        else {
+            nonRejectionInterval[0] = a;
+            nonRejectionInterval[1] = b-n2;
+        }
+
         return nonRejectionInterval;
     }
-    private static int[] testKupiecPF(double confidenceX, int numMoments){
+    private static int[] testKupiecPF(double confidenceX, double epsilon, int numMoments){
         int[] nonRejectionInterval = new int[2];
-        nonRejectionInterval[0] = (int) (numMoments * (1-confidenceX)*0.5);
-        nonRejectionInterval[1] = (int) (numMoments * (1-confidenceX)*1.5);
         int alpha = numMoments + 1;
         double q = confidenceX;
         ChiSquaredDistribution distribution = new ChiSquaredDistribution(1, 0);
-        double quantile = distribution.inverseCumulativeProbability(confidenceX);
-        int a = nonRejectionInterval[0];
-        int b = nonRejectionInterval[1];
-        /**CALCULATE LOWER INTERVAL*/
-        double minimize = Double.POSITIVE_INFINITY;
-        for(int i = 0;i < a;i++){
-            double part1 = Math.pow((alpha-(i+a))/(q*alpha),alpha-(i+a));
-            double part2 = Math.pow((i+a)/((1-q)*alpha),(i+a));
-            double diff  = Math.abs(quantile - 2*Math.log(part1*part2));
-            if(diff<minimize) {
-                minimize = Math.min(diff,minimize);
-                nonRejectionInterval[0] = i + a;
+        double quantile = distribution.inverseCumulativeProbability(1-epsilon);
+        int i = 0;
+        //CALCULATE LOWER INTERVAL
+        while(true) {
+            double part1 = (alpha + 1 - i) / (q * (alpha + 1));
+            part1 = Math.pow(part1, alpha + 1 - i);
+            double part2 = i / ((1 - q) * (alpha + 1));
+            part2 = Math.pow(part2, i);
+            double answer = 2*Math.log(part1*part2);
+            if(answer<=quantile) {
+                nonRejectionInterval[0] = i;
+                break;
             }
+            i++;
         }
-        /**CALCULATE UPPER INTERVAL*/
-        minimize = Double.POSITIVE_INFINITY;
-        for(int i = 0;i < a;i++){
-            double part1 = Math.pow((alpha-(b-i))/(q*alpha),alpha-(b-i));
-            double part2 = Math.pow((b-i)/((1-q)*alpha),(b-i));
-            double diff  = Math.abs(quantile - 2*Math.log(part1*part2));
-            if(diff<minimize) {
-                minimize = Math.min(diff,minimize);
-                nonRejectionInterval[1] = b - i + 1;//ADD 1 TO ROUND UP
+        //CALCULATE UPPER INTERVAL
+        while(true) {
+            double part1 = (alpha + 1 - i) / (q * (alpha + 1));
+            part1 = Math.pow(part1, alpha + 1 - i);
+            double part2 = i / ((1 - q) * (alpha + 1));
+            part2 = Math.pow(part2, i);
+            double answer = 2*Math.log(part1*part2);
+            if(answer >= quantile){
+                nonRejectionInterval[1] = i;
+                break;
             }
+            i++;
         }
         return nonRejectionInterval;
     }
+    private static double epsilon = 0.05; //significance level
     public static int[] main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
@@ -89,7 +105,6 @@ public class BackTest {
             }
         });
         int numSym = symbol.length;
-
         String[] nameMeasures = {"Analytical StDev", "Analytical EWMA", "Analytical GARCH(1,1)","Historic", "Monte Carlo"};
         int numMeasures = nameMeasures.length;
         int numYears = 5;              //Get Five Years of Data for BackTest
@@ -140,7 +155,7 @@ public class BackTest {
             }
         System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
         /** STANDARD COVERAGE TEST*/
-        int[] nonRejectionIntervalStandardCoverage = testCoverage(confidenceX,numMoments);
+        int[] nonRejectionIntervalStandardCoverage = testCoverage(confidenceX, epsilon,numMoments);
         System.out.println("\n\tNon-Rejection Interval from Standard Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalStandardCoverage));
         for(int i = 0; i < violations.length; i++)
             if(violations[i]<= nonRejectionIntervalStandardCoverage[0]|| violations[i]>= nonRejectionIntervalStandardCoverage[1])
@@ -148,7 +163,7 @@ public class BackTest {
             else
                 System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
         /** KUPIEC'S PF COVERAGE TEST*/
-        int[] nonRejectionIntervalKupiecPF = testKupiecPF(confidenceX,numMoments);
+        int[] nonRejectionIntervalKupiecPF = testKupiecPF(confidenceX, epsilon,numMoments);
         System.out.println("\n\tNon-Rejection Interval from Kupiec's Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
         for(int i = 0; i < violations.length; i++)
             if(violations[i]<= nonRejectionIntervalKupiecPF[0]|| violations[i]>= nonRejectionIntervalKupiecPF[1])
