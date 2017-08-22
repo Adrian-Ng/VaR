@@ -1,5 +1,7 @@
 package VaR;
 
+import org.apache.commons.math3.distribution.BinomialDistribution;
+
 import java.io.IOException;
 
 /**
@@ -50,13 +52,45 @@ public class ValueAtRisk {
         for(int i = 0; i < numSym; i++)
             options[i].setVolatility(new methods(stockPrices[i]).getStandardDeviation()* Math.sqrt(252));
         PortfolioInfo.print(Symbol, stockPrices,stockDelta,options,optionDelta);
+/*
+        //binomialtest
+        int alpha = 501;
+        BinomialDistribution distribution = new BinomialDistribution(alpha, 1-confidenceX);
+        for(int i = 0; i < 100; i++)
+            System.out.println(i + " " + (1 - distribution.cumulativeProbability(i)));
 
+        int alpha = 501;
+        double q = 0.95;
+        int i = 0;
+        double quantile = 3.841;
+        while(true) {
+            double part1 = (alpha + 1 - i) / (q * (alpha + 1));
+            part1 = Math.pow(part1, alpha + 1 - i);
+            double part2 = i / ((1 - q) * (alpha + 1));
+            part2 = Math.pow(part2, i);
+            System.out.println(2*Math.log(part1*part2));
+            double answer = 2*Math.log(part1*part2);
+            if(answer<=quantile)
+                break;
+            i++;
+        }
+        while(true) {
+            double part1 = (alpha + 1 - i) / (q * (alpha + 1));
+            part1 = Math.pow(part1, alpha + 1 - i);
+            double part2 = i / ((1 - q) * (alpha + 1));
+            part2 = Math.pow(part2, i);
+            System.out.println(2*Math.log(part1*part2));
+            double answer = 2*Math.log(part1*part2);
+            if(answer >= quantile)
+                break;
+            i++;
+        }*/
         // Get VaR Measures
-        AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
-        AnalyticalLinear.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
-        MonteCarlo.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
-        Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
-        //BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
+        //AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        //AnalyticalLinear.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
+        //MonteCarlo.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
+        //Historic.main(Symbol, stockPrices,stockDelta,options, optionDelta, timeHorizonN, confidenceX,1);
+        BackTest.main(Symbol,stockDelta, options, optionDelta, timeHorizonN, confidenceX);
     }
 }
 
