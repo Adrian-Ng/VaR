@@ -5,7 +5,7 @@ package VaR;
  */
 public class PortfolioInfo {
 
-    public static void print(String[] symbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta){
+    public static double print(String[] symbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta){
         System.out.println("=========================================================================");
         System.out.println("PortfolioInfo.java");
         System.out.println("=========================================================================");
@@ -46,5 +46,6 @@ public class PortfolioInfo {
             currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
         }
         System.out.println("\n\tCurrent Portfolio Value:\t" + currentValue);
+        return currentValue;
     }
 }

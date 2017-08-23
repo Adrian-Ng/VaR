@@ -1,6 +1,7 @@
 package VaR;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.commons.math3.distribution.*;
 
@@ -57,6 +58,16 @@ public class BackTest {
 
         return nonRejectionInterval;
     }
+
+    private static double loglikelihood(double alpha, int i, double q){
+        double part1 = (alpha + 1 - i) / (q * (alpha + 1));
+        part1 = Math.pow(part1, alpha + 1 - i);
+        double part2 = i / ((1 - q) * (alpha + 1));
+        part2 = Math.pow(part2, i);
+        double result = 2*Math.log(part1*part2);
+        return result;
+    }
+
     private static int[] testKupiecPF(double confidenceX, double epsilon, int numMoments){
         int[] nonRejectionInterval = new int[2];
         int alpha = numMoments + 1;
@@ -66,34 +77,83 @@ public class BackTest {
         int i = 0;
         //CALCULATE LOWER INTERVAL
         while(true) {
-            double part1 = (alpha + 1 - i) / (q * (alpha + 1));
-            part1 = Math.pow(part1, alpha + 1 - i);
-            double part2 = i / ((1 - q) * (alpha + 1));
-            part2 = Math.pow(part2, i);
-            double answer = 2*Math.log(part1*part2);
-            if(answer<=quantile) {
-                nonRejectionInterval[0] = i;
+            if(loglikelihood(alpha, i, q)<=quantile) {
                 break;
             }
             i++;
         }
+        double dist1 = Math.abs(loglikelihood(alpha, i ,q)-quantile);
+        double dist2 = Math.abs(loglikelihood(alpha, i-1,q)-quantile);
+        if(dist1 > dist2)
+            nonRejectionInterval[0] = i;
+        else nonRejectionInterval[0] = i-1;
+
         //CALCULATE UPPER INTERVAL
         while(true) {
-            double part1 = (alpha + 1 - i) / (q * (alpha + 1));
-            part1 = Math.pow(part1, alpha + 1 - i);
-            double part2 = i / ((1 - q) * (alpha + 1));
-            part2 = Math.pow(part2, i);
-            double answer = 2*Math.log(part1*part2);
-            if(answer >= quantile){
-                nonRejectionInterval[1] = i;
+            if(loglikelihood(alpha, i, q) >= quantile){
                 break;
             }
             i++;
         }
+        dist1 = Math.abs(loglikelihood(alpha, i ,q)-quantile);
+        dist2 = Math.abs(loglikelihood(alpha, i-1,q)-quantile);
+        if(dist1 > dist2)
+            nonRejectionInterval[1] = i;
+        else nonRejectionInterval[1] = i-1;
         return nonRejectionInterval;
     }
-    private static double epsilon = 0.05; //significance level
-    public static int[] main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX) throws IOException {
+
+    private static void doCoverageTests(double epsilon, double confidenceX, int numMoments, int[] violations, String[] nameMeasures) {
+        /** STANDARD COVERAGE TEST*/
+        int[] nonRejectionIntervalStandardCoverage = testCoverage(confidenceX, epsilon, numMoments);
+        System.out.println("\n\tNon-Rejection Interval from Standard Coverage Test at Significance Level " + epsilon + ":\n\t\t\t" + Arrays.toString(nonRejectionIntervalStandardCoverage));
+        for (int i = 0; i < violations.length; i++) {
+            BackTestData standardBT = new BackTestData();
+            Boolean reject;
+            if (violations[i] <= nonRejectionIntervalStandardCoverage[0] || violations[i] >= nonRejectionIntervalStandardCoverage[1]) {
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
+                reject = true;
+            } else {
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
+                reject = false;
+            }
+            standardBT.setMeasure(nameMeasures[i]);
+            standardBT.setEpsilon(epsilon);
+            standardBT.setCoverage("Standard");
+            standardBT.setLower(nonRejectionIntervalStandardCoverage[0]);
+            standardBT.setUpper(nonRejectionIntervalStandardCoverage[1]);
+            standardBT.setViolations(violations[i]);
+            standardBT.setReject(reject);
+            backTestDatas.add(standardBT);
+        }
+
+        /** KUPIEC'S PF COVERAGE TEST*/
+        int[] nonRejectionIntervalKupiecPF = testKupiecPF(confidenceX, epsilon, numMoments);
+        System.out.println("\n\tNon-Rejection Interval from Kupiec's Coverage Test at Significance Level " + epsilon + ":\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
+        for (int i = 0; i < violations.length; i++) {
+            BackTestData kupiecBT = new BackTestData();
+            Boolean reject;
+            if (violations[i] <= nonRejectionIntervalKupiecPF[0] || violations[i] >= nonRejectionIntervalKupiecPF[1]) {
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
+                reject = true;
+            } else {
+                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
+                reject = false;
+            }
+            kupiecBT.setMeasure(nameMeasures[i]);
+            kupiecBT.setEpsilon(epsilon);
+            kupiecBT.setCoverage("Kupiec");
+            kupiecBT.setLower(nonRejectionIntervalStandardCoverage[0]);
+            kupiecBT.setUpper(nonRejectionIntervalStandardCoverage[1]);
+            kupiecBT.setViolations(violations[i]);
+            kupiecBT.setReject(reject);
+            backTestDatas.add(kupiecBT);
+        }
+    }
+
+
+    private static ArrayList<BackTestData> backTestDatas = new ArrayList<BackTestData>();
+    public static ArrayList<BackTestData> main(String[] symbol, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, String relativePath) throws IOException {
         System.out.println("=========================================================================");
         System.out.println("BackTest.java");
         System.out.println("=========================================================================");
@@ -105,7 +165,7 @@ public class BackTest {
             }
         });
         int numSym = symbol.length;
-        String[] nameMeasures = {"Analytical StDev", "Analytical EWMA", "Analytical GARCH(1,1)","Historic", "Monte Carlo"};
+        String[] nameMeasures = {"StDev", "EWMA", "GARCH","Historical", "Monte Carlo"};
         int numMeasures = nameMeasures.length;
         int numYears = 5;              //Get Five Years of Data for BackTest
         int numMoments = 1000;          //Number of VaRs to Calculate
@@ -136,8 +196,8 @@ public class BackTest {
             momentsVaR[0][i] = AnalyticalVaR[0];
             momentsVaR[1][i] = AnalyticalVaR[1];
             momentsVaR[2][i] = AnalyticalVaR[2];
-            momentsVaR[3][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX,0);
-            momentsVaR[4][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX,0);
+            momentsVaR[3][i] = Historic.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX,0, null);
+            momentsVaR[4][i] = MonteCarlo.main(symbol, stockSubsetInterval, stockDelta, options,  optionDelta, timeHorizonN, confidenceX,0,null);
             System.setOut(originalStream);
         }
         System.out.println("\n\t" + momentsVaR[0].length + " moments of VaR calculated.");
@@ -154,24 +214,10 @@ public class BackTest {
                     violations[j]++;
             }
         System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
-        /** STANDARD COVERAGE TEST*/
-        int[] nonRejectionIntervalStandardCoverage = testCoverage(confidenceX, epsilon,numMoments);
-        System.out.println("\n\tNon-Rejection Interval from Standard Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalStandardCoverage));
-        for(int i = 0; i < violations.length; i++)
-            if(violations[i]<= nonRejectionIntervalStandardCoverage[0]|| violations[i]>= nonRejectionIntervalStandardCoverage[1])
-                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
-            else
-                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
-        /** KUPIEC'S PF COVERAGE TEST*/
-        int[] nonRejectionIntervalKupiecPF = testKupiecPF(confidenceX, epsilon,numMoments);
-        System.out.println("\n\tNon-Rejection Interval from Kupiec's Coverage Test:\n\t\t\t" + Arrays.toString(nonRejectionIntervalKupiecPF));
-        for(int i = 0; i < violations.length; i++)
-            if(violations[i]<= nonRejectionIntervalKupiecPF[0]|| violations[i]>= nonRejectionIntervalKupiecPF[1])
-                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We REJECT this measure.");
-            else
-                System.out.println("\t\t" + nameMeasures[i] + " has " + violations[i] + " violations. We don't reject this measure.");
-
-        new methods(momentsVaR).printMatrixToCSV(nameMeasures,"Backtest - " + numMoments + " moments");
-        return violations;
+        double[] epsilon = {0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+        for(int i = 0; i< epsilon.length; i++)
+            doCoverageTests(epsilon[i], confidenceX, numMoments, violations, nameMeasures);
+        new methods(momentsVaR).printMatrixToCSV(nameMeasures,"Backtest - " + numMoments + " moments", relativePath);
+        return backTestDatas;
     }
 }

@@ -38,7 +38,7 @@ public class MonteCarlo {
             terminalStockPrice[i] = grid[i][N-1];
         return terminalStockPrice;
     }
-    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag)throws IOException {
+    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag, String relativePath)throws IOException {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
@@ -101,9 +101,9 @@ public class MonteCarlo {
         System.out.println("\n\t\tValue at Risk: " + VaR);
         /** PRINT DATA TO CSV*/
         if (printFlag == 1) {
-            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol, "MonteCarlo stockPrices - " + confidenceX + " - " + timeHorizonN);
-            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol, "MonteCarlo putPrices - " + confidenceX + " - " + timeHorizonN);
-            new methods(deltaP).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value - " + confidenceX + " - " + timeHorizonN);
+            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol, "MonteCarlo stockPrices", relativePath);
+            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol, "MonteCarlo putPrices", relativePath);
+            new methods(deltaP).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value", relativePath);
         }
         return VaR;
     }

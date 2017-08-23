@@ -9,7 +9,7 @@ import java.util.Arrays;
  */
 public class Historic {
 
-    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag)throws IOException{
+    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag, String relativePath)throws IOException{
         System.out.println("=========================================================================");
         System.out.println("Historic.java");
         System.out.println("=========================================================================");
@@ -55,9 +55,9 @@ public class Historic {
         System.out.println("\n\t\tValue at Risk: " + VaR);
         /** PRINT DATA TO CSV*/
         if (printFlag == 1){
-            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol,"Historic stockPrices - " + confidenceX + " - " + timeHorizonN);
-            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol,"Historic putPrices - " + confidenceX + " - " + timeHorizonN);
-            new methods(deltaP).printVectorToCSV("Portfolio Value", "Historic Portfolio Value - " + confidenceX + " - " + timeHorizonN);
+            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol,"Historic stockPrices", relativePath);
+            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol,"Historic putPrices", relativePath);
+            new methods(deltaP).printVectorToCSV("Portfolio Value", "Historic Portfolio Value", relativePath);
         }
         return VaR;
     }
