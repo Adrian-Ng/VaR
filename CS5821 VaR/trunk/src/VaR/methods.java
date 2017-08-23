@@ -111,15 +111,12 @@ public class methods {
                 priceDiff[i][j] = multiStock[i][j]-multiStock[i][j+1];
         return priceDiff;
     }
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    LocalDateTime Date = LocalDateTime.now();
-    String dateStr = Date.format(formatter);
-    public void printMatrixToCSV(String[] header, String title)throws IOException{
+    public void printMatrixToCSV(String[] header, String title, String relativePath)throws IOException{
         //https://stackoverflow.com/questions/15364342/export-array-values-to-csv-file-java
         //https://stackoverflow.com/questions/34958829/how-to-save-a-2d-array-into-a-text-file-with-bufferedwriter
         int numCols = multiStock.length;
         int numRows = multiStock[0].length;
-        BufferedWriter br = new BufferedWriter(new FileWriter(dateStr + " - " + title + ".csv"));
+        BufferedWriter br = new BufferedWriter(new FileWriter(relativePath + title + ".csv"));
         StringBuilder sb = new StringBuilder();
         for(int i = 0; i < header.length ; i++){
             sb.append(header[i]);
@@ -138,15 +135,18 @@ public class methods {
         br.write(sb.toString());
         br.close();
     }
-    public void printVectorToCSV(String header, String title) throws IOException{
+    public void printVectorToCSV(String header, String title, String relativePath) throws IOException{
         int numRows = singleStock.length;
-        BufferedWriter br = new BufferedWriter(new FileWriter(dateStr + " - " + title + ".csv"));
+        BufferedWriter br = new BufferedWriter(new FileWriter(relativePath + title + ".csv"));
         StringBuilder sb = new StringBuilder();
         sb.append(header);
+        sb.append("\n");
         for(int i = 0; i < numRows;i++) {
             sb.append(singleStock[i]);
             sb.append("\n");
         }
+        br.write(sb.toString());
+        br.close();
     }
     private int earlyexit = 0;
     private double λ;
