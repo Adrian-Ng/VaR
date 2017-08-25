@@ -18,7 +18,7 @@ public class AnalyticalSingleStock {
         String[] nameVolatilityMeasures = {"Standard Deviation", "EWMA", "GARCH(1,1)"};
         double VaR[][] = new double[nameVolatilityMeasures.length][numSym];
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
-        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
         /** LOOP THROUGH EACH STOCK*/
         for (int i = 0; i < numSym; i++) {
             System.out.println("\t" + symbol[i]);
@@ -28,9 +28,9 @@ public class AnalyticalSingleStock {
             System.out.println("\t\t\tCurrent Price:\t\t"   + stockPrices[i][0]);
             System.out.println("\t\t\tValue:\t\t\t\t"       + stockDelta[i]*stockPrices[i][0]);
             /** CALCULATE VOLATILITIES*/
-            double volatilityStDev = new methods(priceChanges[i]).getStandardDeviation();
-            double volatilityEWMA = new methods(priceChanges[i],priceChanges[i]).getEWMAVolatility();
-            double volatilityGARCH11 = new methods(priceChanges[i], priceChanges[i]).getGARCH11Volatility();
+            double volatilityStDev = new Stats(priceChanges[i]).getEWVolatility();
+            double volatilityEWMA = new Stats(priceChanges[i],priceChanges[i]).getEWMAVolatility();
+            double volatilityGARCH11 = new Stats(priceChanges[i], priceChanges[i]).getGARCH11Volatility();
             /** PRINT VOLATILITIES*/
             System.out.println("\n\t\tVolatilities:");
             System.out.println("\t\t\tStandard Deviation: " + volatilityStDev);

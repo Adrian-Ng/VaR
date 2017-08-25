@@ -7,29 +7,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 /**
- * THIS PROCESS WILL ACCESS THE GOOGLE FINANCE API
- * THE INPUT ARGUMENTS ARE:
- * 1st Argument: Stock Symbols
- * 2nd Argument: Stock Deltas
- * 3rd Argument: Number of Years of Data
- * 4th Argument: Time Horizon
- * 5th Argument: Confidence Level
- *
  * THE ATTRIBUTES OF THE DATA ARE
  *      ﻿Date,Open,High,Low,Close,Volume
  *      We only use Close
  */
-
 public class getStocks {
-
     public static BufferedReader getCSVfromURL(String urlstr) throws IOException{
         InputStream is = new URL(urlstr).openStream();
-        //https://stackoverflow.com/questions/4120942/programatically-downloading-csv-files-with-java
+        //https://stackoverflow.com/a/4120954
         BufferedReader csv = new BufferedReader(new InputStreamReader(is, "UTF-8"));
         return csv;
         //https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
     }
-
     public static ArrayList<Double> getStocksfromCSV(BufferedReader in) throws IOException{
         String inputLine;
         ArrayList<Double> alData = new ArrayList<Double>();
@@ -47,7 +36,6 @@ public class getStocks {
         }
         return alData;
     }
-
     public static String CalculateYearDiffReturnDateAsString(int intYears){
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM+dd,+yyyy");
         LocalDateTime yearsAgo = LocalDateTime.now().minusYears(intYears);
@@ -57,18 +45,18 @@ public class getStocks {
         fromstr = fromstr.replace(",","%2C");
         return fromstr;
     }
-
     public static double[][] main(String[] symbols, int intYears) throws IOException{
         System.out.println("=========================================================================");
         System.out.println("getStocks.java");
         System.out.println("=========================================================================");
+        String fromStrAPI = CalculateYearDiffReturnDateAsString(intYears);
         int numSym = symbols.length;
         HashMap<String, ArrayList<Double>> mapStocks = new HashMap<>();
         System.out.println("\tFetching VaR.Historic Stock Data from " + intYears + " years(s) ago:");
+
         //GET STOCK DATA FOR EACH SYMBOL
         for (int i = 0; i < numSym; i++) {
-            System.out.println("\t" + symbols[i]); // debugging
-            String fromStrAPI = CalculateYearDiffReturnDateAsString(intYears);
+            System.out.println("\t" + symbols[i]);
             //SET urlStrAPI
             String urlStrAPI = "http://www.google.com/finance/historical?q=" + symbols[i] + "&startdate=" + fromStrAPI + "&output=csv";
             BufferedReader csv = getCSVfromURL(urlStrAPI);
@@ -87,7 +75,6 @@ public class getStocks {
             int checkSize  = new ArrayList<Double>(mapStocks.get(symbols[i])).size();
             numTuples =  Math.min(checkSize,numTuples);
         }
-
         double[][] stockPrices = new double[numSym][numTuples];
         //POPULATE stockPrices ARRAY. FEED DATA FROM HashMap mapStocks
         for(int i = 0; i < numSym; i++)

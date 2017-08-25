@@ -1,20 +1,15 @@
 package VaR;
 
-
-import java.util.Random;
-
 /**
  * Created by Adrian on 22/06/2017.
  */
 public class optionsData {
-
     //INSTANCE VARIABLES
     private double[] callPrices;
     private double[] putPrices;
     private double[] strikePrices;
-    private long daystoMaturity;
+    private int daystoMaturity;
     private double volatility;
-
     //GETTERS
     public double[] getCallPrices(){
         return this.callPrices;
@@ -25,7 +20,7 @@ public class optionsData {
     public double[] getStrikePrices(){
         return this.strikePrices;
     }
-    public long getDaystoMaturity(){
+    public int getDaystoMaturity(){
         return this.daystoMaturity;
     }
     public double getVolatility() { return this.volatility; }
@@ -39,11 +34,11 @@ public class optionsData {
     public void setStrikePrices(double[] strikePrices){
         this.strikePrices = strikePrices;
     }
-    public void setDaystoMaturity(long daystoMaturity){ this.daystoMaturity = daystoMaturity; }
+    public void setDaystoMaturity(int daystoMaturity){ this.daystoMaturity = daystoMaturity; }
     public void setVolatility(double volatility) {this.volatility = volatility; }
 
     private final double r = 0.07;// interest rate
-    private  double CNDF(double x)
+    private double CNDF(double x)
     {
         int neg = (x < 0d) ? 1 : 0;
         if ( neg == 1)

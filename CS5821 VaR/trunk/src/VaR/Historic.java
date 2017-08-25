@@ -9,16 +9,21 @@ import java.util.Arrays;
  */
 public class Historic {
 
-    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag, String relativePath)throws IOException{
+    public static double main(Parameters p, double[][] stockPrices, optionsData[] options, int printFlag)throws IOException{
         System.out.println("=========================================================================");
         System.out.println("Historic.java");
         System.out.println("=========================================================================");
-        int numSym = stockSymbol.length;
+        int numSym = p.getNumSym();
+        //get Parameters
+        int[] stockDelta = p.getStockDelta();
+        int[] optionDelta = p.getOptionsDelta();
+        //initialize arrays
         double[] currentStockPrices = new double[numSym];
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
-        long[] daystoMaturity = new long[numSym];
+        int[] daystoMaturity = new int[numSym];
         double currentValue = 0;
+        //get Options data
         for (int i = 0; i < numSym; i++) {
             currentStockPrices[i] = stockPrices[i][0];
             strikePrices[i] = options[i].getStrikePrices();
@@ -28,7 +33,7 @@ public class Historic {
             currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
         }
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
-        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
         /** SIMULATE ALL OF TOMORROW'S POSSIBLE STOCK PRICES FROM HISTORICAL DATA*/
         int numTuple = priceChanges[0].length;
         double[][] tomorrowStockPrices = new double[numSym][numTuple];
@@ -50,14 +55,14 @@ public class Historic {
         }
         /** GET VaR FROM xTH DELTAP */
         Arrays.sort(deltaP);
-        double index = (1-confidenceX)*deltaP.length;
-        double VaR = (currentValue -  deltaP[(int) index]) * Math.sqrt(timeHorizonN);
+        double index = (1-p.getConfidenceLevel())*deltaP.length;
+        double VaR = (currentValue -  deltaP[(int) index]) * Math.sqrt(p.getTimeHorizon());
         System.out.println("\n\t\tValue at Risk: " + VaR);
         /** PRINT DATA TO CSV*/
         if (printFlag == 1){
-            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol,"Historic stockPrices", relativePath);
-            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol,"Historic putPrices", relativePath);
-            new methods(deltaP).printVectorToCSV("Portfolio Value", "Historic Portfolio Value", relativePath);
+            new Stats(tomorrowStockPrices).printMatrixToCSV(p.getSymbol(),"Historic stockPrices", p.getOutputPath());
+            new Stats(tomorrowPutPrices).printMatrixToCSV(p.getSymbol(),"Historic putPrices", p.getOutputPath());
+            new Stats(deltaP).printVectorToCSV("Portfolio Value", "Historic Portfolio Value", p.getOutputPath());
         }
         return VaR;
     }

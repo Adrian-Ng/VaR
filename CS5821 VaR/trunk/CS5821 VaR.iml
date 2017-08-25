@@ -7,12 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="com.yahoofinance-api:YahooFinanceAPI:3.8.0" level="project" />
-    <orderEntry type="library" name="org.apache.commons:commons-csv:1.4" level="project" />
     <orderEntry type="library" name="org.apache.commons:commons-math3:3.6" level="project" />
-    <orderEntry type="library" name="org.json:json:20170516" level="project" />
     <orderEntry type="library" name="com.google.code.gson:gson:2.8.1" level="project" />
-    <orderEntry type="library" name="net.finmath:finmath-lib:3.0.6" level="project" />
-    <orderEntry type="library" name="org.nd4j:canova-nd4j-common:0.0.0.17" level="project" />
   </component>
 </module>

@@ -13,25 +13,19 @@ import java.util.HashMap;
 public class Results {
 
     //INSTANCE VARIABLES
-
     private HashMap<String, Double> varHash = new HashMap();
-    private double  currentValue
-                ,   confidenceLevel;
-    private int     dataYears
-                ,   timeHorizon;
+    private double  currentValue;
+
     //GETTERS
     public double getVarStDev(){
         return this.varHash.get("StDev");
     }
-
     public double getVarEWMA(){
         return this.varHash.get("EWMA");
     }
-
     public double getVarGARCH(){
         return this.varHash.get("GARCH");
     }
-
     public double getVarMonteCarlo(){
         return this.varHash.get("Monte Carlo");
     }
@@ -41,15 +35,7 @@ public class Results {
     public double getCurrentValue(){
         return this.currentValue;
     }
-    public double getDataYears(){
-        return this.dataYears;
-    }
-    public double getTimeHorizon(){
-        return this.timeHorizon;
-    }
-    public double getConfidenceLevel(){
-        return this.timeHorizon;
-    }
+
     //SETTERS
     public void setVarStDev(double varStDev){
         this.varHash.put("StDev", varStDev);
@@ -70,20 +56,12 @@ public class Results {
     public void setCurrentValue(double currentValue){
         this.currentValue = currentValue;
     }
-    public void setConfidenceLevel(double confidenceLevel){
-        this.confidenceLevel = confidenceLevel;
-    }
-    public void setDataYears(int dataYears){
-        this.dataYears = dataYears;
-    }
-    public void setTimeHorizon(int timeHorizon){
-        this.timeHorizon = timeHorizon;
-    }
 
-    public void OutputCSV(ArrayList<BackTestData> ArrayListBT, String relativePath) throws IOException{
-        BufferedWriter br = new BufferedWriter(new FileWriter(relativePath + "rawData.csv"));
+
+    public void OutputCSV(Parameters p, ArrayList<BackTestData> ArrayListBT) throws IOException{
+        BufferedWriter br = new BufferedWriter(new FileWriter(p.getOutputPath() + "rawData.csv"));
         StringBuilder sb = new StringBuilder();
-        String header = "Data (years),Time Horizon (days),Confidence Level,Portfolio Value,Measure,VaR,Significance Level,Coverage Test,Lower Interva,Upper Interval,Violations,Reject";
+        String header = "Data (years),Time Horizon (days),Confidence Level,Portfolio Value,Measure,VaR,Significance Level,Coverage Test,Lower Interval,Upper Interval,Violations,Reject";
 
         sb.append(header);
         sb.append("\n");
@@ -97,9 +75,9 @@ public class Results {
             int violations = BT.getViolations();
             boolean reject = BT.getReject();
 
-            sb.append(dataYears + ",");
-            sb.append(timeHorizon + ",");
-            sb.append(confidenceLevel + ",");
+            sb.append(p.getDataYears() + ",");
+            sb.append(p.getTimeHorizon() + ",");
+            sb.append(p.getConfidenceLevel() + ",");
             sb.append(currentValue + ",");
             sb.append(Measure + ",");
             sb.append(VaR + ",");
@@ -113,6 +91,7 @@ public class Results {
         }
         br.write(sb.toString());
         br.close();
+        
     }
 
 }

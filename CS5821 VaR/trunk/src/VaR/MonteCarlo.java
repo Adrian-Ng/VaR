@@ -38,15 +38,19 @@ public class MonteCarlo {
             terminalStockPrice[i] = grid[i][N-1];
         return terminalStockPrice;
     }
-    public static double main(String[] stockSymbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta, int timeHorizonN, double confidenceX, int printFlag, String relativePath)throws IOException {
+    public static double main(Parameters p, double[][] stockPrices, optionsData[] options, int printFlag)throws IOException {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
-        int numSym = stockSymbol.length;
+        int numSym = p.getNumSym();
+        //get Parameters
+        int[] stockDelta = p.getStockDelta();
+        int[] optionDelta = p.getOptionsDelta();
+        //initialize arrays
         double[] currentStockPrices = new double[numSym];
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
-        long[] daystoMaturity = new long[numSym];
+        int[] daystoMaturity = new int[numSym];
         double currentValue = 0;
         for (int i = 0; i < numSym; i++) {
             currentStockPrices[i] = stockPrices[i][0];
@@ -60,17 +64,17 @@ public class MonteCarlo {
         int N = 24;                                         // 1 day expressed in hours. this is the number of steps.
         int paths = 100000;                                 // number of random walks we will compute
         // initialize doubles
-        double T = timeHorizonN;                            // 1 day
+        double T = p.getTimeHorizon();                            // 1 day
         double dt = T/N;                                    // size of the step where each step is 1 hour
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
-        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
         /** CALCULATE THE COVARIANCE MATRIX FROM THE STOCK MARKET VARIABLES*/
-        double[][] covarianceMatrix = new methods(priceChanges).getCovarianceMatrix();
+        double[][] covarianceMatrix = new Stats(priceChanges).getCovarianceMatrix(1);
         System.out.println("\n\t\tCovariance Matrix of historical price changes:");
         for(int i = 0; i < numSym; i++)
             System.out.println("\t\t" + Arrays.toString(covarianceMatrix[i]));
         /** CALCULATE THE CHOLESKY DECOMPOSITION FROM THE STOCK MARKET VARIABLES*/
-        double[][] choleskyDecomposition = new methods(priceChanges).getCholeskyDecomposition();
+        double[][] choleskyDecomposition = new Stats(priceChanges).getCholeskyDecomposition(1);
         System.out.println("\n\t\tCholesky Decomposition of historical price changes:");
         for(int i = 0; i < numSym; i++)
             System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i]));
@@ -96,14 +100,14 @@ public class MonteCarlo {
         }
         /** GET VaR*/
         Arrays.sort(deltaP);
-        double index = (1-confidenceX)*deltaP.length;
+        double index = (1-p.getConfidenceLevel())*deltaP.length;
         double VaR = currentValue - deltaP[(int) index];
         System.out.println("\n\t\tValue at Risk: " + VaR);
         /** PRINT DATA TO CSV*/
         if (printFlag == 1) {
-            new methods(tomorrowStockPrices).printMatrixToCSV(stockSymbol, "MonteCarlo stockPrices", relativePath);
-            new methods(tomorrowPutPrices).printMatrixToCSV(stockSymbol, "MonteCarlo putPrices", relativePath);
-            new methods(deltaP).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value", relativePath);
+            new Stats(tomorrowStockPrices).printMatrixToCSV(p.getSymbol(), "MonteCarlo stockPrices", p.getOutputPath());
+            new Stats(tomorrowPutPrices).printMatrixToCSV(p.getSymbol(), "MonteCarlo putPrices", p.getOutputPath());
+            new Stats(deltaP).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value", p.getOutputPath());
         }
         return VaR;
     }
