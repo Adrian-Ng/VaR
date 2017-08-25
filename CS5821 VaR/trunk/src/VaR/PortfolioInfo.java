@@ -5,15 +5,21 @@ package VaR;
  */
 public class PortfolioInfo {
 
-    public static double print(String[] symbol, double[][] stockPrices, int[] stockDelta, optionsData[] options, int[] optionDelta){
+    public static double print(Parameters p, double[][] stockPrices, optionsData[] options){
         System.out.println("=========================================================================");
         System.out.println("PortfolioInfo.java");
         System.out.println("=========================================================================");
-        int numSym = symbol.length;
+        int numSym = p.getNumSym();
+        //initialize arrays
         double[] currentStockPrices = new double[numSym];
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
-        long[] daystoMaturity = new long[numSym];
+        int[] daystoMaturity = new int[numSym];
+        // get Parameters
+        String[] symbol = p.getSymbol();
+        int[] stockDelta = p.getStockDelta();
+        int[] optionDelta = p.getOptionsDelta();
+        //get Options data
         for (int i = 0; i < numSym; i++) {
             strikePrices[i] = options[i].getStrikePrices();
             daystoMaturity[i] = options[i].getDaystoMaturity();
@@ -22,7 +28,7 @@ public class PortfolioInfo {
         /**
          * CALCULATE PERCENTAGE CHANGE IN STOCK PRICE
          */
-        double[][] priceChanges = new methods(stockPrices).getPercentageChanges();
+        double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
         double currentValue = 0;
         /** LOOP THROUGH EACH STOCK*/
         for (int i = 0; i < numSym; i++) {
@@ -34,7 +40,7 @@ public class PortfolioInfo {
             System.out.println("\t\t\tDelta:\t\t\t\t"       + stockDelta[i]);
             System.out.println("\t\t\tCurrent Price:\t\t"   + currentStockPrices[i]);
             System.out.println("\t\t\tValue:\t\t\t\t"       + stockDelta[i]*currentStockPrices[i]);
-            System.out.printf("\t\t\tMean Price Change:\t" + "%.4f", new methods(priceChanges[i]).getMean());
+            System.out.printf("\t\t\tMean Price Change:\t" + "%.4f", new Stats(priceChanges[i]).getMean());
             /**PRINT OPTIONS VARIABLES*/
             System.out.println("\n\t\tPut Variables:");
             System.out.println("\t\t\tDelta:\t\t\t\t"       + optionDelta[i]);

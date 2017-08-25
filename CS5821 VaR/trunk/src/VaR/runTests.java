@@ -10,13 +10,13 @@ public class runTests {
 
     public static void main(String args[]) throws IOException{
         String[][] arguments = {
-                    {"GOOG", "100",  "0", "1", "1", "0.95"}
-                ,   {"GOOG", "100",  "0", "1", "1", "0.99"}
+                    //{"GOOG", "100",  "0", "1", "1", "0.95"}
+                /*,   {"GOOG", "100",  "0", "1", "1", "0.99"}
 
                 ,   {"GOOG|TSLA", "100|200",  "0|0", "1", "1", "0.95"}
                 ,   {"GOOG|TSLA", "100|200",  "0|0", "1", "1", "0.99"}
 
-                ,   {"GOOG|TSLA|AAPL", "100|200|100",  "0|0|0", "1", "1", "0.95"}
+                ,  */ {"GOOG|TSLA|AAPL", "100|200|100",  "0|0|0", "1", "1", "0.95"}/*
                 ,   {"GOOG|TSLA|AAPL", "100|200|100",  "0|0|0", "1", "1", "0.99"}
 
                 ,   {"GOOG|TSLA|AAPL", "100|200|100",  "10|20|10", "1", "1", "0.95"}
@@ -56,12 +56,12 @@ public class runTests {
                 ,   {"GOOG|TSLA|AAPL", "100|200|100",  "0|0|0", "5", "10", "0.99"}
 
                 ,   {"GOOG|TSLA|AAPL", "100|200|100",  "10|20|10", "5", "10", "0.95"}
-                ,   {"GOOG|TSLA|AAPL", "100|200|100",  "10|20|10", "5", "10", "0.99"}
+                ,   {"GOOG|TSLA|AAPL", "100|200|100",  "10|20|10", "5", "10", "0.99"}*/
 
         };
 
         for(int i = 0; i < arguments.length;i++) {
-            System.out.println(Arrays.toString(arguments[i]));
+            //System.out.println(Arrays.toString(arguments[i]));
             ValueAtRisk.main(arguments[i]);
         }
     }

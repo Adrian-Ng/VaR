@@ -8,28 +8,25 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
 import com.google.gson.*;
 
 public class getOptions {
-    public static JsonObject getJSONfromURL(String urlStrAPI) throws IOException{
+    private static JsonObject getJSONfromURL(String urlStrAPI) throws IOException{
         //https://stackoverflow.com/a/21964051 user2654569
         URL url = new URL(urlStrAPI);
         HttpURLConnection request = (HttpURLConnection) url.openConnection();
         request.connect();
-        // Convert to a JSON object to print data
+        // Convert to a JsonObject
         JsonParser jp = new JsonParser(); //from gson
         JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent())); //Convert the input stream to a json element
-        JsonObject rootobj = root.getAsJsonObject(); //May be an array, may be an object.
+        JsonObject rootobj = root.getAsJsonObject(); //JSON object in Java
         return rootobj;
     }
 
-    public static long getNumDaystoExpiry(String expiryYear, String expiryMonth, String expiryDayofMonth) {
+    private static int getNumDaystoExpiry(String expiryYear, String expiryMonth, String expiryDayofMonth) {
         DateFormat format = new SimpleDateFormat("yyyy MM d", Locale.ENGLISH);
         Date expiryDate = null;
         Date currentDate = new Date();
@@ -41,18 +38,18 @@ public class getOptions {
         System.out.println("\t\tOptions Expiration Date: " + expiryDate);
         //https://stackoverflow.com/questions/20165564/calculating-days-between-two-dates-with-in-java
         long diff = expiryDate.getTime() - currentDate.getTime();
-        long NumDaystoExpiry = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+        int NumDaystoExpiry = (int) TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
         return NumDaystoExpiry;
     }
 
-    public static optionsData getOptionsfromJSON(JsonObject json) {
+    private static optionsData getOptionsfromJSON(JsonObject json) {
         //https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
         optionsData options = new optionsData();
         JsonObject expiry = json.get("expiry").getAsJsonObject();
         String expiryYear = expiry.get("y").toString();
         String expiryMonth = expiry.get("m").toString();
         String expiryDayofMonth = expiry.get("d").toString();
-        long NumDaystoExpiry = getNumDaystoExpiry(expiryYear, expiryMonth, expiryDayofMonth);
+        int NumDaystoExpiry = getNumDaystoExpiry(expiryYear, expiryMonth, expiryDayofMonth);
         System.out.println("\t\tDays to Expiration: " + NumDaystoExpiry);
         JsonArray jsonPuts = json.get("puts").getAsJsonArray();
         int numPuts = jsonPuts.size();
