@@ -22,7 +22,7 @@ public class Historic {
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
         int[] daystoMaturity = new int[numSym];
-        double currentValue = 0;
+        double todayPi = 0;
         //get Options data
         for (int i = 0; i < numSym; i++) {
             currentStockPrices[i] = stockPrices[i][0];
@@ -30,7 +30,7 @@ public class Historic {
             daystoMaturity[i] = options[i].getDaystoMaturity();
             currentPutPrices[i] = options[i].getPutPrices();
             int numPuts = currentPutPrices[i].length;
-            currentValue += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
+            todayPi += stockDelta[i] * currentStockPrices[i] + optionDelta[i] * currentPutPrices[i][numPuts-1];
         }
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
         double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
@@ -46,23 +46,23 @@ public class Historic {
             for(int  j = 0; j < numTuple; j++)
                 tomorrowPutPrices[i][j] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j]);
         /** REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES*/
-        double[] deltaP = new double[numTuple];
+        double[] tomorrowPi = new double[numTuple];
         for(int i = 0; i < numTuple;i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
                 sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]);
-            deltaP[i] = sum;
+            tomorrowPi[i] = sum;
         }
         /** GET VaR FROM xTH DELTAP */
-        Arrays.sort(deltaP);
-        double index = (1-p.getConfidenceLevel())*deltaP.length;
-        double VaR = (currentValue -  deltaP[(int) index]) * Math.sqrt(p.getTimeHorizon());
+        Arrays.sort(tomorrowPi);
+        double index = (1-p.getConfidenceLevel())*tomorrowPi.length;
+        double VaR = (todayPi -  tomorrowPi[(int) index]) * Math.sqrt(p.getTimeHorizon());
         System.out.println("\n\t\tValue at Risk: " + VaR);
         /** PRINT DATA TO CSV*/
         if (printFlag == 1){
             new Stats(tomorrowStockPrices).printMatrixToCSV(p.getSymbol(),"Historic stockPrices", p.getOutputPath());
             new Stats(tomorrowPutPrices).printMatrixToCSV(p.getSymbol(),"Historic putPrices", p.getOutputPath());
-            new Stats(deltaP).printVectorToCSV("Portfolio Value", "Historic Portfolio Value", p.getOutputPath());
+            new Stats(tomorrowPi).printVectorToCSV("Portfolio Value", "Historic Portfolio Value", p.getOutputPath());
         }
         return VaR;
     }
