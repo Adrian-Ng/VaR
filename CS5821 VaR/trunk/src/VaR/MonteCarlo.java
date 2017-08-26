@@ -38,7 +38,7 @@ public class MonteCarlo {
             terminalStockPrice[i] = grid[i][N-1];
         return terminalStockPrice;
     }
-    public static double main(Parameters p, double[][] stockPrices, optionsData[] options, int printFlag)throws IOException {
+    public static double[] main(Parameters p, double[][] stockPrices, optionsData[] options, int printFlag)throws IOException {
         System.out.println("=========================================================================");
         System.out.println("MonteCarlo.java");
         System.out.println("=========================================================================");
@@ -47,6 +47,7 @@ public class MonteCarlo {
         int[] stockDelta = p.getStockDelta();
         int[] optionDelta = p.getOptionsDelta();
         //initialize arrays
+        String[] nameVolatilityMeasures = {"EW", "EWMA","GARCH(1,1)"};
         double[] currentStockPrices = new double[numSym];
         double[][] strikePrices = new double[numSym][];
         double[][] currentPutPrices = new double[numSym][];
@@ -62,52 +63,72 @@ public class MonteCarlo {
         }
         //initialize ints
         int N = 24;                                         // 1 day expressed in hours. this is the number of steps.
-        int paths = 100000;                                 // number of random walks we will compute
+        int paths = 10000;                                 // number of random walks we will compute
         // initialize doubles
         double T = p.getTimeHorizon();                            // 1 day
         double dt = T/N;                                    // size of the step where each step is 1 hour
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
         double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
         /** CALCULATE THE COVARIANCE MATRIX FROM THE STOCK MARKET VARIABLES*/
-        double[][] covarianceMatrix = new Stats(priceChanges).getCovarianceMatrix(1);
-        System.out.println("\n\t\tCovariance Matrix of historical price changes:");
-        for(int i = 0; i < numSym; i++)
-            System.out.println("\t\t" + Arrays.toString(covarianceMatrix[i]));
+        double[][][] covarianceMatrix = new double[nameVolatilityMeasures.length][numSym][numSym];
+        for(int i = 0; i < covarianceMatrix.length; i++) {
+            System.out.println("\n\t\tCovariance Matrix " + nameVolatilityMeasures[i] + ":");
+            covarianceMatrix[i] = new Stats(priceChanges).getCovarianceMatrix(i + 1);
+            for(int j = 0; j < numSym; j++)
+                System.out.println("\t\t" + Arrays.toString(covarianceMatrix[i][j]));
+        }
         /** CALCULATE THE CHOLESKY DECOMPOSITION FROM THE STOCK MARKET VARIABLES*/
-        double[][] choleskyDecomposition = new Stats(priceChanges).getCholeskyDecomposition(1);
-        System.out.println("\n\t\tCholesky Decomposition of historical price changes:");
-        for(int i = 0; i < numSym; i++)
-            System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i]));
+        double[][][] choleskyDecomposition = new double[nameVolatilityMeasures.length][numSym][numSym];
+        for(int i = 0; i < choleskyDecomposition.length; i++) {
+            System.out.println("\n\t\tCholesky Decomposition:" + nameVolatilityMeasures[i] + ":");
+            choleskyDecomposition[i] = new Stats(priceChanges).getCholeskyDecomposition(i + 1);
+            for(int j = 0; j < numSym; j++)
+                System.out.println("\t\t" + Arrays.toString(choleskyDecomposition[i][j]));
+        }
+
         /** SIMULATE TOMORROW'S STOCK PRICE VIA MONTE CARLO METHOD*/
-        double[][] tomorrowStockPrices = new double[numSym][paths];
-        for (int i = 0; i < paths; i++) {
-            double[] tuplePercentageChanges = simuluatePath(N, currentStockPrices, dt, choleskyDecomposition);
-            for(int j =0; j < numSym; j++)
-                tomorrowStockPrices[j][i] = tuplePercentageChanges[j];
-        }
+        double[][][] tomorrowStockPrices = new double[nameVolatilityMeasures.length][numSym][paths];
+        for(int i = 0; i < tomorrowStockPrices.length; i++)
+            for (int j = 0; j < paths; j++) {
+                double[] tuplePercentageChanges = simuluatePath(N, currentStockPrices, dt, choleskyDecomposition[i]);
+                for(int k =0; k < numSym; k++) {
+                    tomorrowStockPrices[i][k][j] = tuplePercentageChanges[k];
+                    //System.out.println(tuplePercentageChanges[k]);
+                }
+            }
         /** PRICE OPTIONS */
-        double[][] tomorrowPutPrices = new double[numSym][paths];
-        for(int i = 0; i < numSym; i++)
-            for(int  j = 0; j < paths; j++)
-                tomorrowPutPrices[i][j] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j]);
+        double[][][] tomorrowPutPrices = new double[nameVolatilityMeasures.length][numSym][paths];
+        for(int i = 0; i < tomorrowPutPrices.length; i++)
+            for(int j = 0; j < numSym; j++)
+                for(int  k = 0; k < paths; k++)
+                    tomorrowPutPrices[i][j][k] = options[i].getBlackScholesPut(tomorrowStockPrices[i][j][k]);
         /** REVALUE PORTFOLIO FROM ALL POSSIBLE PERCENTAGE CHANGES*/
-        double[] deltaP = new double[paths];
-        for(int i = 0; i < paths;i++) {
-            double sum = 0;
-            for (int j = 0; j < numSym; j++)
-                sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]);
-            deltaP[i] = sum;
-        }
+        double[][] deltaP = new double[nameVolatilityMeasures.length][paths];
+        for(int i = 0; i < deltaP.length; i++)
+            for(int j = 0; j < paths;j++) {
+                double sum = 0;
+                for (int k = 0; k < numSym; k++)
+                    sum += (tomorrowStockPrices[i][k][j] * stockDelta[k]) + (tomorrowPutPrices[i][k][j] * optionDelta[k]);
+                deltaP[i][j] = sum;
+            }
         /** GET VaR*/
-        Arrays.sort(deltaP);
-        double index = (1-p.getConfidenceLevel())*deltaP.length;
-        double VaR = currentValue - deltaP[(int) index];
-        System.out.println("\n\t\tValue at Risk: " + VaR);
+        double[] VaR = new double[nameVolatilityMeasures.length];
+        for(int i = 0; i < deltaP.length; i++) {
+            Arrays.sort(deltaP[i]);
+            double index = (1 - p.getConfidenceLevel()) * deltaP[i].length;
+            VaR[i] = currentValue - deltaP[i][(int) index];
+        }
+        System.out.println("\n\t\tValue At Risk:");
+        System.out.println("\t\t\tEW:\t\t\t\t\t"        + VaR[0]);
+        System.out.println("\t\t\tEWMA:\t\t\t\t"        + VaR[1]);
+        System.out.println("\t\t\tGARCH(1,1):\t\t\t"    + VaR[2]);
         /** PRINT DATA TO CSV*/
         if (printFlag == 1) {
-            new Stats(tomorrowStockPrices).printMatrixToCSV(p.getSymbol(), "MonteCarlo stockPrices", p.getOutputPath());
-            new Stats(tomorrowPutPrices).printMatrixToCSV(p.getSymbol(), "MonteCarlo putPrices", p.getOutputPath());
-            new Stats(deltaP).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value", p.getOutputPath());
+            for(int i = 0; i < nameVolatilityMeasures.length; i++) {
+                new Stats(tomorrowStockPrices[i]).printMatrixToCSV(p.getSymbol(), "MonteCarlo stockPrices " + nameVolatilityMeasures[i], p.getOutputPath());
+                new Stats(tomorrowPutPrices[i]).printMatrixToCSV(p.getSymbol(), "MonteCarlo putPrices " + nameVolatilityMeasures[i], p.getOutputPath());
+                new Stats(deltaP[i]).printVectorToCSV("Portfolio Value", "MonteCarlo Portfolio Value " + nameVolatilityMeasures[i], p.getOutputPath());
+            }
         }
         return VaR;
     }

@@ -33,14 +33,16 @@ public class ValueAtRisk {
         // Get VaR Measures
         //AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
         double[] varLinear = Analytical.main(p, stockPrices);
-        double varMC = MonteCarlo.main(p, stockPrices,options, 1);
+        double[] varMC = MonteCarlo.main(p, stockPrices,options, 1);
         double varHistorical = Historic.main(p, stockPrices,options, 1);
         //set results
-        r.setVarStDev(varLinear[0]);
-        r.setVarEWMA(varLinear[1]);
-        r.setVarGARCH(varLinear[2]);
+        r.setVarANEW(varLinear[0]);
+        r.setVarANEWMA(varLinear[1]);
+        r.setVarANGARCH(varLinear[2]);
         r.setVarHistorical(varHistorical);
-        r.setVarMonteCarlo(varMC);
+        r.setVarMCEW(varMC[0]);
+        r.setVarMCEWMA(varMC[1]);
+        r.setVarMCGARCH(varMC[2]);
         return r;
     }
 
@@ -50,7 +52,7 @@ public class ValueAtRisk {
         String relativePath = p.getOutputPath();
         FileOutputStream f = new FileOutputStream(relativePath + "output.txt");
         PrintStream originalStream = System.out;
-        //System.setOut(new PrintStream(f));
+        System.setOut(new PrintStream(f));
         System.out.println("=========================================================================");
         System.out.println("ValueAtRisk.java");
         System.out.println("=========================================================================");
@@ -66,13 +68,13 @@ public class ValueAtRisk {
         //estimate VaR
         Results r = estimateVaR(p, stockPrices,options);
         //do backtest
-        //ArrayList<BackTestData> ArrayListBT = BackTest.main(p, options);
+        ArrayList<BackTestData> ArrayListBT = BackTest.main(p, options);
         //close print stream f
         f.close();
         //Reset output stream to default
         System.setOut(originalStream);
         //print raw data to csv
-        //r.OutputCSV(p, ArrayListBT);
+        r.OutputCSV(p, ArrayListBT);
     }
 }
 

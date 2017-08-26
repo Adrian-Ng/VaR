@@ -17,41 +17,52 @@ public class Results {
     private double  currentValue;
 
     //GETTERS
-    public double getVarStDev(){
-        return this.varHash.get("StDev");
+    public double getVarANEW(){
+        return this.varHash.get("Analytical EW");
     }
-    public double getVarEWMA(){
-        return this.varHash.get("EWMA");
+    public double getVarANEWMA(){
+        return this.varHash.get("Analytical EWMA");
     }
-    public double getVarGARCH(){
-        return this.varHash.get("GARCH");
-    }
-    public double getVarMonteCarlo(){
-        return this.varHash.get("Monte Carlo");
+    public double getVarANGARCH(){
+        return this.varHash.get("Analytical GARCH");
     }
     public double getVarHistorical(){
         return this.varHash.get("Historical");
+    }
+    public double getVarMCEW(){
+        return this.varHash.get("Monte Carlo EW");
+    }
+    public double getVarMCEWMA(){
+        return this.varHash.get("Monte Carlo EWMA");
+    }
+    public double getVarMCGARCH(){
+        return this.varHash.get("Monte Carlo GARCH");
     }
     public double getCurrentValue(){
         return this.currentValue;
     }
 
     //SETTERS
-    public void setVarStDev(double varStDev){
-        this.varHash.put("StDev", varStDev);
+    public void setVarANEW(double varANEW){
+        this.varHash.put("Analytical EW", varANEW);
     }
-
-    public void setVarEWMA(double varEWMA){
-        this.varHash.put("EWMA", varEWMA);
+    public void setVarANEWMA(double varANEWMA){
+        this.varHash.put("Analytical EWMA", varANEWMA);
     }
-    public void setVarGARCH(double varGARCH){
-        this.varHash.put("GARCH", varGARCH);
-    }
-    public void setVarMonteCarlo(double varMonteCarlo){
-        this.varHash.put("Monte Carlo", varMonteCarlo);
+    public void setVarANGARCH(double varANGARCH){
+        this.varHash.put("Analytical GARCH", varANGARCH);
     }
     public void setVarHistorical(double varHistorical){
         this.varHash.put("Historical", varHistorical);
+    }
+    public void setVarMCEW(double varMCEW){
+        this.varHash.put("Monte Carlo EW", varMCEW);
+    }
+    public void setVarMCEWMA(double varMCEWMA){
+        this.varHash.put("Monte Carlo EWMA", varMCEWMA);
+    }
+    public void setVarMCGARCH(double varMCGARCH){
+        this.varHash.put("Monte Carlo GARCH", varMCGARCH);
     }
     public void setCurrentValue(double currentValue){
         this.currentValue = currentValue;

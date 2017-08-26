@@ -169,7 +169,7 @@ public class BackTest {
         //get Parameters
         int[] stockDelta = p.getStockDelta();
         int[] optionDelta = p.getOptionsDelta();
-        String[] nameMeasures = {"StDev", "EWMA", "GARCH","Historical", "Monte Carlo"};
+        String[] nameMeasures = {"Analytical EW", "Analytical EWMA", "Analytical GARCH","Historical", "Monte Carlo EW", "Monte Carlo EWMA", "Monte Carlo GARCH"};
         int numMeasures = nameMeasures.length;
         int numYears = 5;              //Get Five Years of Data for BackTest
         int numMoments = 1000;          //Number of VaRs to Calculate
@@ -203,7 +203,10 @@ public class BackTest {
             //momentsVaR[3][i] = AnalyticalVaR[2];
             //momentsVaR[4][i] = AnalyticalVaR[2];
             momentsVaR[3][i] = Historic.main( p,stockSubsetInterval, options,0);
-            momentsVaR[4][i] = MonteCarlo.main(p,stockSubsetInterval, options,0);
+            double[] MonteCarloVaR = MonteCarlo.main(p,stockSubsetInterval, options,0);
+            momentsVaR[4][i] = MonteCarloVaR[0];
+            momentsVaR[5][i] = MonteCarloVaR[1];
+            momentsVaR[6][i] = MonteCarloVaR[2];
             System.setOut(originalStream);
         }
         System.out.println("\n\t" + momentsVaR[0].length + " moments of VaR calculated.");
