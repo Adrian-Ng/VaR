@@ -51,7 +51,7 @@ public static double[] main(Parameters p, double[][] stockPrices){
         VaR[i] = Math.sqrt(p.getTimeHorizon()) * riskPercentile * Math.sqrt(sum[i]);
     /** PRINT VAR*/
     System.out.println("\n\t\tValue At Risk:");
-    System.out.println("\t\t\tEW: " + VaR[0]);
+    System.out.println("\t\t\tEW\t\t\t\t\t: " + VaR[0]);
     System.out.println("\t\t\tEWMA:\t\t\t\t"        + VaR[1]);
     System.out.println("\t\t\tGARCH(1,1):\t\t\t"    + VaR[2]);
     return VaR;

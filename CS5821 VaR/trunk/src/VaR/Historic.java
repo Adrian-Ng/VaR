@@ -53,7 +53,7 @@ public class Historic {
                 sum += (tomorrowStockPrices[j][i] * stockDelta[j]) + (tomorrowPutPrices[j][i] * optionDelta[j]);
             tomorrowPi[i] = sum;
         }
-        /** GET VaR FROM xTH DELTAP */
+        /** GET VaR FROM xTH percentile */
         Arrays.sort(tomorrowPi);
         double index = (1-p.getConfidenceLevel())*tomorrowPi.length;
         double VaR = (todayPi -  tomorrowPi[(int) index]) * Math.sqrt(p.getTimeHorizon());
