@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -72,7 +73,7 @@ public class Results {
     public void OutputCSV(Parameters p, ArrayList<BackTestData> ArrayListBT) throws IOException{
         BufferedWriter br = new BufferedWriter(new FileWriter(p.getOutputPath() + "rawData.csv"));
         StringBuilder sb = new StringBuilder();
-        String header = "Data (years),Time Horizon (days),Confidence Level,Portfolio Value,Measure,VaR,Significance Level,Coverage Test,Lower Interval,Upper Interval,Violations,Reject";
+        String header = "HashCode,numStocks,sumOptions,Years,Time Horizon (days),Confidence Level,Portfolio Value,Measure,VaR,Significance Level,Coverage Test,Lower Interval,Upper Interval,Violations,Reject";
 
         sb.append(header);
         sb.append("\n");
@@ -86,6 +87,9 @@ public class Results {
             int violations = BT.getViolations();
             boolean reject = BT.getReject();
 
+            sb.append(p.getHashCode() + ",");
+            sb.append(p.getNumSym() + ",");
+            sb.append(p.getSumOptions() + ",");
             sb.append(p.getDataYears() + ",");
             sb.append(p.getTimeHorizon() + ",");
             sb.append(p.getConfidenceLevel() + ",");
@@ -102,7 +106,6 @@ public class Results {
         }
         br.write(sb.toString());
         br.close();
-        
     }
 
 }

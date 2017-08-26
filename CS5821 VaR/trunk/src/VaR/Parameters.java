@@ -17,6 +17,8 @@ public class Parameters {
     private int dataYears;
     private int timeHorizon;
     private double confidenceLevel;
+    private int HashCode;
+    private String outputPath;
     //GETTERS
     public String[] getSymbol(){
         return this.Symbol;
@@ -32,6 +34,8 @@ public class Parameters {
     public double getConfidenceLevel(){
         return this.confidenceLevel;
     }
+    public int getHashCode() {return this.HashCode;}
+    public String getOutputPath(){return this.outputPath;}
     //SETTERS
     public void setSymbol(String strSymbol){
         this.Symbol = strSymbol.split("\\|");
@@ -61,18 +65,7 @@ public class Parameters {
     public void setConfidenceLevel(String strConfidenceLevel){
         this.confidenceLevel = Double.parseDouble(strConfidenceLevel);
     }
-
-    //INSTANCE METHODS
-    public int getSumOptions(){
-        int sum = 0;
-        for(int i = 0; i < optionsDelta.length; i++)
-            sum += optionsDelta[i];
-        return sum;
-    }
-    public int getNumSym(){
-        return Symbol.length;
-    }
-    public String getOutputPath(){
+    public void setOutputPath(){
         //format date
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDateTime Date = LocalDateTime.now();
@@ -95,7 +88,18 @@ public class Parameters {
                 + getConfidenceLevel() + " confidence" +  "/";
         new File(outputPath).mkdir();
         //Excel doesn't like it when you open up files of the same name. So we prefix with a unique hash!
-        outputPath = outputPath + outputPath.hashCode() + " - ";
-        return outputPath;
+        this.HashCode = outputPath.hashCode();
+        this.outputPath = outputPath + getHashCode() + " - ";
     }
+    //INSTANCE METHODS
+    public int getSumOptions(){
+        int sum = 0;
+        for(int i = 0; i < optionsDelta.length; i++)
+            sum += optionsDelta[i];
+        return sum;
+    }
+    public int getNumSym(){
+        return Symbol.length;
+    }
+
 }

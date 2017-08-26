@@ -23,6 +23,7 @@ public class ValueAtRisk {
         p.setDataYears(args[3]);
         p.setTimeHorizon(args[4]);
         p.setConfidenceLevel(args[5]);
+        p.setOutputPath();
         return p;
     }
 
@@ -52,7 +53,7 @@ public class ValueAtRisk {
         String relativePath = p.getOutputPath();
         FileOutputStream f = new FileOutputStream(relativePath + "output.txt");
         PrintStream originalStream = System.out;
-        System.setOut(new PrintStream(f));
+        //System.setOut(new PrintStream(f));
         System.out.println("=========================================================================");
         System.out.println("ValueAtRisk.java");
         System.out.println("=========================================================================");
@@ -68,13 +69,13 @@ public class ValueAtRisk {
         //estimate VaR
         Results r = estimateVaR(p, stockPrices,options);
         //do backtest
-        ArrayList<BackTestData> ArrayListBT = BackTest.main(p, options);
+        //ArrayList<BackTestData> ArrayListBT = BackTest.main(p, options);
         //close print stream f
         f.close();
         //Reset output stream to default
         System.setOut(originalStream);
         //print raw data to csv
-        r.OutputCSV(p, ArrayListBT);
+        //r.OutputCSV(p, ArrayListBT);
     }
 }
 
