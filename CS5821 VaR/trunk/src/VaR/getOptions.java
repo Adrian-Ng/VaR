@@ -44,7 +44,7 @@ public class getOptions {
 
     private static optionsData getOptionsfromJSON(JsonObject json) {
         //https://stackoverflow.com/questions/4216745/java-string-to-date-conversion
-        optionsData options = new optionsData();
+
         JsonObject expiry = json.get("expiry").getAsJsonObject();
         String expiryYear = expiry.get("y").toString();
         String expiryMonth = expiry.get("m").toString();
@@ -81,6 +81,7 @@ public class getOptions {
                 callPrices[i] = Double.NaN;
             }
         }
+        optionsData options  = new optionsData();
         options.setCallPrices(callPrices);
         options.setPutPrices(putPrices);
         options.setStrikePrices(strikePrices);

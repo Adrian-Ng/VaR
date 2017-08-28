@@ -4,9 +4,9 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class MonteCarlo {
-
     private static Random epsilon = new Random();
-    private static double[] stepsRandomWalk(double[][] choleskyDecomposition) {
+    private static double[] weinerProcess(double[][] choleskyDecomposition) {
+
         int numSym = choleskyDecomposition.length;
         // Generate a vector of random variables, sampling from random Gaussian of mean 0 and sd 1
         double[] dz = new double[numSym];
@@ -17,19 +17,19 @@ public class MonteCarlo {
         for(int i = 0; i < numSym; i++) {
             double sum = 0;
             for (int j = 0; j < numSym; j++)
-                sum += choleskyDecomposition[i][j] * dz[j] ;
+                sum += choleskyDecomposition[i][j] * dz[j];
             correlatedRandomVariables[i] = sum;
         }
         return correlatedRandomVariables;
     }
-    private static double[] simuluatePath(int N, double[] currentStockPrices, double dt, double[][] choleskyDecomposition) {
+    private static double[] randomWalk(int N, double[] currentStockPrices, double dt, double[][] choleskyDecomposition) {
         int numSym = choleskyDecomposition.length;
         double[][] grid = new double[numSym][N];
         double[] terminalStockPrice = new double[numSym];
         for(int i = 0; i < numSym; i++)
             grid[i][0] = currentStockPrices[i];
         for(int i = 1; i < N; i++) {
-            double[] correlatedRandomVariables = stepsRandomWalk(choleskyDecomposition);
+            double[] correlatedRandomVariables = weinerProcess(choleskyDecomposition);
             for (int j = 0; j < numSym; j ++)
                 grid[j][i] = (correlatedRandomVariables[j] * grid[j][i-1] * Math.sqrt(dt)) +  grid[j][i-1];
         }
@@ -65,9 +65,8 @@ public class MonteCarlo {
         int N = 24;                                        // 1 day expressed in hours. this is the number of steps.
         int paths = 10000;                                 // number of random walks we will compute
         // initialize doubles
-        double T = p.getTimeHorizon();                      // time horizon
+
         double dt = 1.0/N;                                    // magnitude of step
-        System.out.println(dt);
         /** CALCULATE PERCENTAGE CHANGE IN STOCK PRICE*/
         double[][] priceChanges = new Stats(stockPrices).getPercentageChanges();
 
@@ -83,7 +82,7 @@ public class MonteCarlo {
         double[][][] tomorrowStockPrices = new double[nameVolatilityMeasures.length][numSym][paths];
         for(int i = 0; i < tomorrowStockPrices.length; i++)
             for (int j = 0; j < paths; j++) {
-                double[] tuplePercentageChanges = simuluatePath(N, currentStockPrices, dt, choleskyDecomposition[i]);
+                double[] tuplePercentageChanges = randomWalk(N, currentStockPrices, dt, choleskyDecomposition[i]);
                 for(int k =0; k < numSym; k++)
                     tomorrowStockPrices[i][k][j] = tuplePercentageChanges[k];
             }

@@ -1,5 +1,7 @@
 package VaR;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
+
 /**
  * Created by Adrian on 22/06/2017.
  */
@@ -37,22 +39,12 @@ public class optionsData {
     public void setDaystoMaturity(int daystoMaturity){ this.daystoMaturity = daystoMaturity; }
     public void setVolatility(double volatility) {this.volatility = volatility; }
 
-    private final double r = 0.07;// interest rate
-    private double CNDF(double x)
-    {
-        int neg = (x < 0d) ? 1 : 0;
-        if ( neg == 1)
-            x *= -1d;
-        double k = (1d / ( 1d + 0.2316419 * x));
-        double y = (((( 1.330274429 * k - 1.821255978) * k + 1.781477937) *
-                k - 0.356563782) * k + 0.319381530) * k;
-        y = 1.0 - 0.398942280401 * Math.exp(-0.5 * x * x) * y;
-        return (1d - neg) * y + neg * (1d - y);
-    }
     private double getBlackScholesOptionPrices(double stockPrice, int flag){
+        NormalDistribution distribution = new NormalDistribution(0,1);
         double X = this.strikePrices[strikePrices.length-1];
         double T = (this.daystoMaturity-1)/252;
         double S0 = stockPrice;
+        double r = 0.07;// interest rate
         double sigma = volatility;
         //calculate d1
         double d1 = (Math.log(S0/X)+ (r +(Math.pow(sigma,2)/2))*T)/(sigma*Math.sqrt(T));
@@ -60,12 +52,12 @@ public class optionsData {
         double d2 = d1 - (sigma*Math.sqrt(T));
         if (flag == 0) {
             //calculate call
-            double call = (S0 * CNDF(d1)) - (X * Math.exp(-r * T) * CNDF(d2));
+            double call = (S0 * distribution.cumulativeProbability(d1)) - (X * Math.exp(-r * T) * distribution.cumulativeProbability(d2));
             return call;
         }
         else {
             //calculate put
-            double put = X * Math.exp(-r * T) * CNDF(-d2) - S0 * CNDF(-d1);
+            double put = X * Math.exp(-r * T) * distribution.cumulativeProbability(-d2) - S0 * distribution.cumulativeProbability(-d1);
             return put;
         }
     }
@@ -75,7 +67,13 @@ public class optionsData {
     public double getBlackScholesCall(double stockPrice){
         return getBlackScholesOptionPrices(stockPrice, 0);
     }
-
-
-
+    //CONSTUCTORS
+    public optionsData(){}
+    public optionsData(optionsData options){
+        setCallPrices(options.getCallPrices());
+        setPutPrices(options.getPutPrices());
+        setStrikePrices(options.getStrikePrices());
+        setDaystoMaturity(options.getDaystoMaturity());
+        setVolatility(options.getVolatility());
+    }
 }

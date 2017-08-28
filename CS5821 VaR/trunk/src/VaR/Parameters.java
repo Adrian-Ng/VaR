@@ -56,6 +56,10 @@ public class Parameters {
             optionDelta[i] = Integer.parseInt(splitOptionDelta[i]);
         this.optionsDelta = optionDelta;
     }
+    public void setOptionsDelta(int[] OptionsDelta){
+        //SPLIT PIPE DELIMITED LIST OF OPTIONS DELTA
+        this.optionsDelta = OptionsDelta;
+    }
     public void setTimeHorizon(String strTimeHorizon){
         this.timeHorizon = Integer.parseInt(strTimeHorizon);
     }
