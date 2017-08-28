@@ -72,7 +72,7 @@ public class getStocks {
         //THIS IS IN CASE YOU HAVE MULTIPLE STOCKS AND THE ARRAYLISTS ARE OF DIFFERENT SIZES
         int numTuples = Integer.MAX_VALUE;
         for(int i = 0; i < numSym; i++){
-            int checkSize  = new ArrayList<Double>(mapStocks.get(symbols[i])).size();
+            int checkSize  = new ArrayList<>(mapStocks.get(symbols[i])).size();
             numTuples =  Math.min(checkSize,numTuples);
         }
         double[][] stockPrices = new double[numSym][numTuples];

@@ -32,7 +32,6 @@ public class ValueAtRisk {
         Results r = new Results();
         r.setCurrentValue(currentValue);
         // Get VaR Measures
-        //AnalyticalSingleStock.main(Symbol, stockPrices,stockDelta, timeHorizonN, confidenceX);
         double[] varLinear = Analytical.main(p, stockPrices);
         double[] varMC = MonteCarlo.main(p, stockPrices,options, 1);
         double varHistorical = Historic.main(p, stockPrices,options, 1);
@@ -53,7 +52,7 @@ public class ValueAtRisk {
         String relativePath = p.getOutputPath();
         FileOutputStream f = new FileOutputStream(relativePath + "output.txt");
         PrintStream originalStream = System.out;
-        //System.setOut(new PrintStream(f));
+        System.setOut(new PrintStream(f));
         System.out.println("=========================================================================");
         System.out.println("ValueAtRisk.java");
         System.out.println("=========================================================================");
@@ -69,13 +68,13 @@ public class ValueAtRisk {
         //estimate VaR
         Results r = estimateVaR(p, stockPrices,options);
         //do backtest
-        //ArrayList<BackTestData> ArrayListBT = BackTest.main(p, options);
+        ArrayList<BackTestData> ArrayListBT = BackTest.main(p, options);
         //close print stream f
         f.close();
         //Reset output stream to default
         System.setOut(originalStream);
         //print raw data to csv
-        //r.OutputCSV(p, ArrayListBT);
+        r.OutputCSV(p, ArrayListBT);
     }
 }
 

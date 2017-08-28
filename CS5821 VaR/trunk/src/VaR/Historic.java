@@ -39,7 +39,7 @@ public class Historic {
         double[][] tomorrowStockPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)
             for(int  j = 0; j < numTuple; j++)
-                tomorrowStockPrices[i][j] = (priceChanges[i][j] * currentStockPrices[i]) + currentStockPrices[i];
+                tomorrowStockPrices[i][j] = (priceChanges[i][j] + 1) * currentStockPrices[i];
         /** PRICE OPTIONS */
         double[][] tomorrowPutPrices = new double[numSym][numTuple];
         for(int i = 0; i < numSym; i++)

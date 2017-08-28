@@ -58,7 +58,6 @@ public class BackTest {
 
         return nonRejectionInterval;
     }
-
     private static double loglikelihood(double alpha, int i, double q){
         double part1 = (alpha + 1 - i) / (q * (alpha + 1));
         part1 = Math.pow(part1, alpha + 1 - i);
@@ -67,7 +66,6 @@ public class BackTest {
         double result = 2*Math.log(part1*part2);
         return result;
     }
-
     private static int[] testKupiecPF(double confidenceX, double epsilon, int numMoments){
         int[] nonRejectionInterval = new int[2];
         int alpha = numMoments + 1;
@@ -102,7 +100,6 @@ public class BackTest {
         else nonRejectionInterval[1] = i-1;
         return nonRejectionInterval;
     }
-
     private static ArrayList<BackTestData> doCoverageTests(double confidenceX, int numMoments, int[] violations, String[] nameMeasures) {
         ArrayList<BackTestData> backTestDatas = new ArrayList<BackTestData>();
         double[] epsilon = {0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
@@ -169,6 +166,13 @@ public class BackTest {
         //get Parameters
         int[] stockDelta = p.getStockDelta();
         int[] optionDelta = p.getOptionsDelta();
+        //INSTANTIATE TWO DUPLICATES OF optionsData[] options
+        optionsData[] optionsBackTest1 = new optionsData[options.length];
+        optionsData[] optionsBackTest2 = new optionsData[options.length];
+        for(int i = 0; i< options.length; i++ ) {
+            optionsBackTest1[i] = new optionsData(options[i]);
+            optionsBackTest2[i] = new optionsData(options[i]);
+        }
         String[] nameMeasures = {"Analytical EW", "Analytical EWMA", "Analytical GARCH","Historical", "Monte Carlo EW", "Monte Carlo EWMA", "Monte Carlo GARCH"};
         int numMeasures = nameMeasures.length;
         int numYears = 5;              //Get Five Years of Data for BackTest
@@ -177,33 +181,50 @@ public class BackTest {
         double[][] momentsVaR = new double[numMeasures][numMoments];
         // Get Stock Data
         double[][] stockPrices = getStocks.main(p.getSymbol(), numYears);
-        /** GET DAILY CHANGES IN ABSOLUTE PORTFOLIO VALUE*/
-        double[][] priceChanges = new Stats(stockPrices).getAbsoluteChanges();
-        double[] deltaP = new double[priceChanges[0].length];
-        for (int i = 0; i < priceChanges[0].length; i++) {
+
+        /** GO THROUGH THE ENTIRE HISTORY AND PREDICT ALL OPTION PRICES*/
+        double[][] optionPrices = new double[numSym][stockPrices[0].length];
+        for(int i = 0; i < numSym; i++)
+            for(int j = 0; j < optionPrices[0].length; j++) {
+                int days = (optionsBackTest1[i].getDaystoMaturity() + j)%252;
+                optionsBackTest1[i].setDaystoMaturity(days);
+                optionPrices[i][j] = optionsBackTest1[i].getBlackScholesPut(stockPrices[i][j]);
+            }
+        /** VALUE PORTFOLIO AT EVERY MOMENT */
+        double[] valuePi = new double[stockPrices[0].length];
+        for(int i = 0; i < valuePi.length; i++) {
             double sum = 0.0;
             for (int j = 0; j < numSym; j++)
-                sum += stockDelta[j] * priceChanges[j][i];
-            deltaP[i] = sum;
+                sum += (stockDelta[j] * stockPrices[j][i]) + optionDelta[j]*optionPrices[j][i];
+            valuePi[i] = sum;
         }
-        /** SET optionDelta TO ZERO*/
-        Arrays.fill(optionDelta,0);
+        /** GET DAILY CHANGES IN ABSOLUTE PORTFOLIO VALUE*/
+        double[] deltaPi = new double[valuePi.length-1];
+        for (int j = 0; j < deltaPi.length; j++)
+            deltaPi[j] = valuePi[j]- valuePi[j+1];
         /** RETURN VaR FOR EACH MOMENT*/
         System.out.print("\nReturning VaR for each moment. This will take a while...");
         for (int i = 0; i < numMoments; i++) {
+            //get our predicted options prices for this day
+            double[][] tupleOptionPrices = new double[numSym][1];
+            for(int j = 0; j < numSym; j++)
+                tupleOptionPrices[j][0] = optionPrices[j][i];
             double[][] stockSubsetInterval = new double[numSym][intervals];
-            for (int j = 0; j < numSym; j++)
+            for (int j = 0; j < numSym; j++) {
                 for (int k = i; k < intervals + i; k++)
                     stockSubsetInterval[j][k - i] = stockPrices[j][k];
+                //INCREMENT THE DAYS TO MATURITY
+                int daysBacktest = (options[j].getDaystoMaturity() + i);
+                optionsBackTest2[j].setDaystoMaturity(daysBacktest%252);
+                optionsBackTest2[j].setPutPrices(tupleOptionPrices[j]);
+            }
             System.setOut(dummyStream);
             double[] AnalyticalVaR = Analytical.main(p, stockSubsetInterval);
             momentsVaR[0][i] = AnalyticalVaR[0];
             momentsVaR[1][i] = AnalyticalVaR[1];
             momentsVaR[2][i] = AnalyticalVaR[2];
-            //momentsVaR[3][i] = AnalyticalVaR[2];
-            //momentsVaR[4][i] = AnalyticalVaR[2];
-            momentsVaR[3][i] = Historic.main( p,stockSubsetInterval, options,0);
-            double[] MonteCarloVaR = MonteCarlo.main(p,stockSubsetInterval, options,0);
+            momentsVaR[3][i] = Historic.main( p,stockSubsetInterval, optionsBackTest2,0);
+            double[] MonteCarloVaR = MonteCarlo.main(p,stockSubsetInterval, optionsBackTest2,0);
             momentsVaR[4][i] = MonteCarloVaR[0];
             momentsVaR[5][i] = MonteCarloVaR[1];
             momentsVaR[6][i] = MonteCarloVaR[2];
@@ -218,12 +239,11 @@ public class BackTest {
             for (int j = 0; j < numMeasures; j++) {
                 double sum = 0.0;
                 for(int k = 0; k < p.getTimeHorizon(); k++)
-                    sum += deltaP[i+k];
+                    sum += deltaPi[i+k];
                 if (-momentsVaR[j][i] >  sum)
                     violations[j]++;
             }
         System.out.println("\n\tViolations:\n\t\t\t" + Arrays.toString(violations));
-
         ArrayList<BackTestData> ArrayListBT =  doCoverageTests(p.getConfidenceLevel(), numMoments, violations, nameMeasures);
         new Stats(momentsVaR).printMatrixToCSV(nameMeasures,"Backtest - " + numMoments + " moments", p.getOutputPath());
         return ArrayListBT;
